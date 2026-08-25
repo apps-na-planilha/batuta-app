@@ -3,11 +3,12 @@
 // que tenha handler de fetch, e ele garante que a casca abra offline.
 // O conteudo do app NUNCA e cacheado — vem do Apps Script, sempre fresco.
 
-const CACHE = "batuta-casca-v1";
+const CACHE = "batuta-casca-v2";
 const CASCA = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
+  "./ponte.js",
   "./icones/icone-192.png",
   "./icones/icone-512.png",
   "./icones/apple-touch-icon.png"
