@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit=cover: sem isso, env(safe-area-inset-*) sempre vale 0 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Batuta</title>
+
+<!-- ===== PWA: estas metatags SÓ funcionam no documento de topo ===== -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#131829">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Batuta">
+<link rel="apple-touch-icon" href="./icones/apple-touch-icon.png">
+<link rel="icon" href="./icones/icone-192.png">
+
+<style>
+  :root { --fundo:#131829; --texto:#E7E9F0; --suave:#8A91A6; --ouro:#D9A94F; --borda:#2A3145; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--fundo); }
+  body {
+    color:var(--texto);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    overscroll-behavior:none;
+  }
+
+  /* O iframe ocupa a área útil, respeitando notch e barra de gestos */
+  #palco {
+    position:fixed; inset:0;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+  }
+  #app { width:100%; height:100%; border:0; display:block; background:var(--fundo); }
+
+  /* Telas de configuração e diagnóstico */
+  .painel {
+    position:fixed; inset:0; overflow-y:auto;
+    padding:calc(env(safe-area-inset-top) + 28px) 22px calc(env(safe-area-inset-bottom) + 28px);
+    background:var(--fundo);
+  }
+  .painel[hidden] { display:none; }
+  .marca { display:flex; align-items:center; gap:12px; margin-bottom:26px; }
+  .marca img { width:44px; height:44px; border-radius:11px; }
+  .marca b { font-size:19px; letter-spacing:-.02em; }
+  h1 { font-size:17px; margin:0 0 8px; letter-spacing:-.01em; }
+  p  { font-size:14px; line-height:1.55; color:var(--suave); margin:0 0 16px; }
+  label { display:block; font-size:12px; color:var(--suave); margin-bottom:7px; }
+  input {
+    width:100%; padding:13px 14px; font-size:15px; border-radius:10px;
+    border:1px solid var(--borda); background:#1B2133; color:var(--texto);
+  }
+  input:focus { outline:2px solid var(--ouro); outline-offset:1px; }
+  button {
+    width:100%; margin-top:14px; padding:14px; font-size:15px; font-weight:600;
+    border:0; border-radius:10px; background:var(--ouro); color:#131829; cursor:pointer;
+  }
+  button.secundario { background:transparent; color:var(--suave); border:1px solid var(--borda); }
+
+  /* Diagnóstico */
+  .linha {
+    display:flex; justify-content:space-between; align-items:center; gap:14px;
+    padding:13px 0; border-bottom:1px solid var(--borda); font-size:14px;
+  }
+  .linha span:first-child { color:var(--suave); }
+  .linha b { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px; text-align:right; }
+  .sim  { color:#6FBF95; }
+  .nao  { color:#E06B76; }
+  .veredito {
+    margin:22px 0 0; padding:16px; border-radius:12px;
+    border:1px solid var(--borda); background:#1B2133; font-size:14px; line-height:1.55;
+  }
+  .veredito b { color:var(--texto); }
+
+  /* Botão flutuante de diagnóstico — só aparece com ?diag=1 */
+  #btn-diag {
+    position:fixed; z-index:10; width:38px; height:38px; padding:0; margin:0;
+    right:calc(env(safe-area-inset-right) + 10px);
+    bottom:calc(env(safe-area-inset-bottom) + 74px);
+    border-radius:50%; background:rgba(217,169,79,.9); font-size:17px; line-height:38px;
+  }
+  #btn-diag[hidden] { display:none; }
+</style>
+</head>
+<body>
+
+<!-- ===== O app ===== -->
+<div id="palco" hidden><iframe id="app" title="Batuta" allow="clipboard-write"></iframe></div>
+<button id="btn-diag" hidden title="Diagnóstico">◑</button>
+
+<!-- ===== Configuração inicial ===== -->
+<section class="painel" id="tela-config" hidden>
+  <div class="marca"><img src="./icones/icone-192.png" alt=""><b>Batuta</b></div>
+  <h1>Conectar à sua planilha</h1>
+  <p>Cole a URL do seu app publicado no Apps Script. Ela termina em <code>/exec</code> e fica guardada
+     só neste aparelho.</p>
+  <label for="url">URL do app</label>
+  <input id="url" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+         placeholder="https://script.google.com/macros/s/.../exec">
+  <button id="salvar">Conectar</button>
+</section>
+
+<!-- ===== Diagnóstico ===== -->
+<section class="painel" id="tela-diag" hidden>
+  <div class="marca"><img src="./icones/icone-192.png" alt=""><b>Diagnóstico</b></div>
+  <p>Adicione esta página à tela inicial e abra pelo ícone. Se “Modo standalone” marcar
+     <span class="sim">sim</span>, a barra do navegador sumiu.</p>
+  <div id="diag"></div>
+  <div class="veredito" id="veredito"></div>
+  <button class="secundario" id="voltar">Voltar ao app</button>
+  <button class="secundario" id="trocar">Trocar URL</button>
+</section>
+
+<script>
+const CHAVE = "batuta.url";
+const params = new URLSearchParams(location.search);
+const $ = (id) => document.getElementById(id);
+
+/* A URL pode vir por ?app=... (facilita o primeiro teste no celular) */
+if (params.get("app")) {
+  try { localStorage.setItem(CHAVE, params.get("app")); } catch (e) {}
+}
+
+function urlSalva() {
+  try { return localStorage.getItem(CHAVE) || ""; } catch (e) { return ""; }
+}
+
+function abrirApp() {
+  const url = urlSalva();
+  if (!url) { $("tela-config").hidden = false; return; }
+  $("app").src = url;
+  $("palco").hidden = false;
+  $("btn-diag").hidden = !params.get("diag");
+}
+
+$("salvar").onclick = () => {
+  const v = $("url").value.trim();
+  if (!/^https:\/\/script\.google\.com\/.+\/exec/.test(v)) {
+    alert("A URL precisa começar com https://script.google.com/ e terminar em /exec");
+    return;
+  }
+  try { localStorage.setItem(CHAVE, v); } catch (e) {}
+  $("tela-config").hidden = true;
+  abrirApp();
+};
+
+/* ===== Diagnóstico ===== */
+function standalone() {
+  return window.matchMedia("(display-mode: standalone)").matches
+      || window.navigator.standalone === true;
+}
+
+function medirSafeArea() {
+  const s = getComputedStyle(document.documentElement);
+  const p = document.createElement("div");
+  p.style.cssText = "position:fixed;top:0;padding-top:env(safe-area-inset-top);" +
+                    "padding-bottom:env(safe-area-inset-bottom);visibility:hidden";
+  document.body.appendChild(p);
+  const c = getComputedStyle(p);
+  const r = c.paddingTop + " / " + c.paddingBottom;
+  p.remove();
+  return r;
+}
+
+function renderDiag() {
+  const modo = standalone();
+  const iframeOk = (() => {
+    try { return !!$("app").contentWindow; } catch (e) { return false; }
+  })();
+
+  const itens = [
+    ["Modo standalone", modo, modo ? "sim" : "não"],
+    ["Service worker", "serviceWorker" in navigator, "serviceWorker" in navigator ? "suportado" : "ausente"],
+    ["SW controlando", !!navigator.serviceWorker?.controller, navigator.serviceWorker?.controller ? "sim" : "não"],
+    ["Safe area (topo/base)", null, medirSafeArea()],
+    ["Iframe acessível", iframeOk, iframeOk ? "sim" : "bloqueado"],
+    ["URL configurada", !!urlSalva(), urlSalva() ? "sim" : "não"],
+    ["Plataforma", null, navigator.platform || "—"],
+    ["display-mode", null, ["standalone","minimal-ui","fullscreen","browser"]
+        .find(m => matchMedia(`(display-mode: ${m})`).matches) || "—"],
+  ];
+
+  $("diag").innerHTML = itens.map(([rot, ok, val]) =>
+    `<div class="linha"><span>${rot}</span><b class="${ok === null ? "" : ok ? "sim" : "nao"}">${val}</b></div>`
+  ).join("");
+
+  $("veredito").innerHTML = modo
+    ? "<b>Funcionou.</b> A página abriu sem a barra do navegador. O caminho do wrapper está " +
+      "validado — falta confirmar se o app dentro do iframe carrega e faz login normalmente."
+    : "<b>Ainda com barra.</b> Se você abriu pelo ícone da tela inicial e mesmo assim deu " +
+      "“não”, o wrapper não resolveu neste aparelho. Anote o sistema e a versão do navegador.";
+}
+
+$("btn-diag").onclick = () => { renderDiag(); $("tela-diag").hidden = false; };
+$("voltar").onclick   = () => { $("tela-diag").hidden = true; };
+$("trocar").onclick   = () => {
+  try { localStorage.removeItem(CHAVE); } catch (e) {}
+  location.search = "";
+};
+
+/* Sem URL configurada, o diagnóstico é a tela inicial — permite testar
+   o standalone antes de expor a planilha. */
+if (!urlSalva() && params.get("diag")) {
+  renderDiag();
+  $("tela-diag").hidden = false;
+} else {
+  abrirApp();
+}
+
+/* O service worker é o que torna a página instalável no Chrome Android. */
+if ("serviceWorker" in navigator) {
+  addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
