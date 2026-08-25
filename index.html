@@ -69,6 +69,12 @@
   .linha b { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px; text-align:right; }
   .sim  { color:#6FBF95; }
   .nao  { color:#E06B76; }
+  .selo {
+    padding:15px; border-radius:12px; text-align:center; font-weight:700;
+    font-size:15px; margin:0 0 18px; border:1px solid;
+  }
+  .selo.sim { background:#14261D; color:#6FBF95; border-color:#2F6B4F; }
+  .selo.nao { background:#2E1A1D; color:#E06B76; border-color:#8A3038; }
   .veredito {
     margin:22px 0 0; padding:16px; border-radius:12px;
     border:1px solid var(--borda); background:#1B2133; font-size:14px; line-height:1.55;
@@ -106,8 +112,9 @@
 <!-- ===== Diagnóstico ===== -->
 <section class="painel" id="tela-diag" hidden>
   <div class="marca"><img src="./icones/icone-192.png" alt=""><b>Diagnóstico</b></div>
-  <p>Adicione esta página à tela inicial e abra pelo ícone. Se “Modo standalone” marcar
-     <span class="sim">sim</span>, a barra do navegador sumiu.</p>
+  <div class="selo" id="selo"></div>
+  <p>Adicione esta página à tela inicial e abra <b>pelo ícone</b>. O selo acima já responde:
+     verde significa que a barra do navegador sumiu.</p>
   <div id="diag"></div>
   <div class="veredito" id="veredito"></div>
   <button class="secundario" id="voltar">Voltar ao app</button>
@@ -122,6 +129,11 @@ const $ = (id) => document.getElementById(id);
 /* A URL pode vir por ?app=... (facilita o primeiro teste no celular) */
 if (params.get("app")) {
   try { localStorage.setItem(CHAVE, params.get("app")); } catch (e) {}
+}
+
+/* ?reset=1 esquece a URL salva e volta para a tela de conexão. */
+if (params.get("reset")) {
+  try { localStorage.removeItem(CHAVE); } catch (e) {}
 }
 
 function urlSalva() {
@@ -187,6 +199,11 @@ function renderDiag() {
     `<div class="linha"><span>${rot}</span><b class="${ok === null ? "" : ok ? "sim" : "nao"}">${val}</b></div>`
   ).join("");
 
+  $("selo").className = modo ? "selo sim" : "selo nao";
+  $("selo").textContent = modo
+    ? "✓  Sem barra do navegador"
+    : "✗  Ainda com barra do navegador";
+
   $("veredito").innerHTML = modo
     ? "<b>Funcionou.</b> A página abriu sem a barra do navegador. O caminho do wrapper está " +
       "validado — falta confirmar se o app dentro do iframe carrega e faz login normalmente."
@@ -201,13 +218,13 @@ $("trocar").onclick   = () => {
   location.search = "";
 };
 
-/* Sem URL configurada, o diagnóstico é a tela inicial — permite testar
-   o standalone antes de expor a planilha. */
-if (!urlSalva() && params.get("diag")) {
+/* Com ?diag=1 o diagnóstico abre SEMPRE por cima — inclusive quando o app
+   já está carregado, ou quando ele falhou. Antes só aparecia sem URL salva,
+   o que tornava o teste impossível justamente em quem já tinha conectado. */
+abrirApp();
+if (params.get("diag")) {
   renderDiag();
   $("tela-diag").hidden = false;
-} else {
-  abrirApp();
 }
 
 /* O service worker é o que torna a página instalável no Chrome Android. */
