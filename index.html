@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-26T00:15:32.778Z
+     Gerado em 2026-08-26T00:42:36.171Z
      ============================================================ -->
 <!doctype html>
 <html>
@@ -3466,9 +3466,21 @@
       );
 
       // Email Status
-      var emailText = _isoToBr(status.lastEmailAt || "");
+      //
+      // A data tem que acompanhar o status: lastEmailAt marca o último envio
+      // BEM-SUCEDIDO, enquanto lastEmailStatus vale para a última TENTATIVA.
+      // Exibir os dois juntos produzia "24/08 (ERROR_NO_EMAIL)" — a data de
+      // um envio que deu certo ao lado do erro de outra tentativa.
+      var falhou = status.lastEmailStatus && status.lastEmailStatus !== "SENT";
+      var quando = falhou
+        ? status.lastAttemptAt || status.lastEmailAt
+        : status.lastEmailAt;
+      var emailText = _isoToBr(quando || "") || "--";
       if (status.lastEmailStatus) {
         emailText += " (" + status.lastEmailStatus + ")";
+      }
+      if (falhou && status.lastEmailAt) {
+        emailText += " · último OK: " + _isoToBr(status.lastEmailAt);
       }
       document.getElementById("maestro-last-email").textContent = emailText;
       document.getElementById("maestro-last-type").textContent =
