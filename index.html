@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-26T00:52:42.375Z
+     Gerado em 2026-08-26T00:57:54.265Z
      ============================================================ -->
 <!doctype html>
 <html>
@@ -3275,6 +3275,7 @@
     // ╚══════════════════════════════════════════════════════════════╝
 
     var _configCache = null;
+    var _modoDev = false; // definido por getConfigData(); ver MODO_DEV no schema
 
     function carregarConfig() {
       var container = document.getElementById("config-list");
@@ -3292,6 +3293,7 @@
       google.script.run
         .withSuccessHandler(function (data) {
           _configCache = data;
+          _modoDev = data.modoDev === true;
 
           if (data.categorias) {
             cats = data.categorias;
@@ -3440,6 +3442,14 @@
     function renderMaestroPrefs(prefs, status) {
       prefs = prefs || {};
       status = status || {};
+
+      // O painel de teste é ferramenta de desenvolvimento. Para o cliente ele
+      // só serviria para inundar a própria caixa de entrada e sujar o log de
+      // auditoria — os e-mails de teste são gravados iguais aos de produção.
+      var painelTeste = document.getElementById("maestro-test-panel");
+      if (painelTeste) {
+        painelTeste.style.display = _modoDev ? "" : "none";
+      }
 
       document.getElementById("maestro-enabled").checked =
         prefs.enabled !== false;
