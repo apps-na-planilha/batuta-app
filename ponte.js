@@ -80,6 +80,9 @@
     removerCategoria: function (a) {
       return ["delCategoria", "POST", { tipo: a[0], nome: a[1] }];
     },
+    salvarLiquidezCategoria: function (a) {
+      return ["salvarLiquidez", "POST", { nome: a[0], liquidez: a[1] }];
+    },
     concluirOnboarding: function () {
       return ["concluirOnboarding", "POST", {}];
     },

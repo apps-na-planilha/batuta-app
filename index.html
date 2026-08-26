@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-26T04:04:50.421Z
+     Gerado em 2026-08-26T05:19:28.724Z
      ============================================================ -->
 <!doctype html>
 <html>
@@ -320,6 +320,75 @@
     .saude-leitura.vazio {
       color: var(--text-sec);
       font-weight: 500;
+    }
+
+    /* Nota de liquidez do runway (SPEC-005). Só aparece quando parte da
+       posição investida NÃO conta como reserva — se tudo conta, não há
+       o que explicar. */
+    .saude-nota {
+      margin-top: 8px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-sec);
+    }
+
+    .saude-nota button {
+      background: none;
+      border: none;
+      padding: 0 0 0 4px;
+      font: inherit;
+      font-weight: 700;
+      color: var(--primary);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* PATRIMÔNIO NO TEMPO — SPEC-004 (M-3) */
+    .patrimonio-topo {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .patrimonio-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .patrimonio-delta {
+      font-size: 12px;
+      font-weight: 600;
+      text-align: right;
+      color: var(--text-sec);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .patrimonio-delta.sobe {
+      color: var(--success);
+    }
+
+    .patrimonio-delta.desce {
+      color: var(--danger);
+    }
+
+    /* Burn rate em texto (SPEC-004). Ler número é mais fácil que caçar
+       linha tracejada numa tela de 390 px. */
+    .burn-legenda {
+      margin-top: 10px;
+      font-size: 11px;
+      line-height: 1.5;
+      text-align: center;
+      color: var(--text-sec);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .burn-legenda strong {
+      color: var(--text-main);
+      font-weight: 700;
     }
 
     /* CHART CONTAINER */
@@ -1344,6 +1413,41 @@
       background: rgba(239, 68, 68, 0.25);
     }
 
+    /* Seletor de liquidez — SPEC-005. Só existe na aba Aporte/Resgate:
+       liquidez não significa nada para Saída e Entrada, e um seletor
+       cinza nas outras abas ensinaria a ignorá-lo. */
+    .cat-list-item .cat-nome {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 8px;
+    }
+
+    .liq-select {
+      flex-shrink: 0;
+      margin-right: 8px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .liq-nota {
+      font-size: 11px;
+      color: var(--text-sec);
+      background: rgba(59, 130, 246, 0.08);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
     .cat-modal-add-row {
       display: flex;
       gap: 8px;
@@ -1854,6 +1958,14 @@
             </div>
           </div>
           <div class="saude-leitura" id="runway-leitura"></div>
+          <!-- Nasce escondida: só aparece quando parte da posição investida
+               não conta como reserva. Ver SPEC-005. -->
+          <div class="saude-nota" id="runway-liquidez" style="display: none">
+            <span class="saude-money" id="runway-liquidez-txt"></span>
+            <button type="button" onclick="abrirModalCategoriasEm('Aporte')">
+              ajustar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1910,6 +2022,20 @@
       <div class="chart-container">
         <div class="chart-title">📈 Evolução Mensal (6 meses)</div>
         <canvas id="chart_evolucao" style="width: 100%; max-height: 280px"></canvas>
+        <!-- Burn rate em texto — SPEC-004 (M-4). -->
+        <div class="burn-legenda saude-money" id="burn-legenda" style="display: none"></div>
+      </div>
+
+      <!-- PATRIMÔNIO LÍQUIDO NO TEMPO — SPEC-004 (M-3).
+           Nasce escondido: com menos de 2 meses de série o card some, em vez
+           de desenhar um ponto solto e chamar de tendência. -->
+      <div class="chart-container" id="card-patrimonio" style="display: none">
+        <div class="chart-title">🏦 Patrimônio Líquido (12 meses)</div>
+        <div class="patrimonio-topo">
+          <div class="patrimonio-val saude-money" id="patrimonio-val">—</div>
+          <div class="patrimonio-delta saude-money" id="patrimonio-delta"></div>
+        </div>
+        <canvas id="chart_patrimonio" style="width: 100%; max-height: 240px"></canvas>
       </div>
     </div>
 
@@ -2901,6 +3027,10 @@
       renderizarTaxaPoupanca(dados.taxaPoupanca, dados.mesReferencia);
       renderizarRunway(dados.runway, dados.mesReferencia);
 
+      // 2c. Patrimônio no tempo e burn rate (SPEC-004)
+      renderizarPatrimonio(dados.patrimonio);
+      renderizarBurnRate(dados.burnRate);
+
       // 3. Lista de Transações (via paginação server-side)
       // Limpar campo de busca ao trocar de mês
       document.getElementById("searchTx").value = "";
@@ -2974,7 +3104,7 @@
         dados.graficoEvolucao.labels &&
         dados.graficoEvolucao.labels.length > 0
       ) {
-        desenharEvolucao(dados.graficoEvolucao);
+        desenharEvolucao(dados.graficoEvolucao, dados.burnRate);
       } else {
         var evoCanvas = document.getElementById("chart_evolucao");
         evoCanvas.style.display = "none";
@@ -3425,6 +3555,7 @@
             cats = data.categorias;
             atualizarCategorias();
           }
+          if (data.liquidez) _liquidez = data.liquidez;
 
           renderizarOrcamentosConfig(data.orcamentos);
           document.getElementById("input-meta").value = data.meta || "";
@@ -4047,16 +4178,35 @@
 
     var _catTipoAtivo = "Sa\u00edda";
 
+    // Liquidez por categoria — SPEC-005. Vem junto do getConfigData().
+    var _liquidez = {};
+
     function abrirModalCategorias() {
       vibrar(20);
       document.getElementById("cat-modal").classList.add("open");
       document.body.style.overflow = "hidden";
+      // getConfigData em vez de getCategorias: traz categorias E liquidez
+      // numa chamada só, e o modal precisa das duas para desenhar o seletor.
       google.script.run
         .withSuccessHandler(function (data) {
-          if (data) cats = data;
+          if (data) {
+            if (data.categorias) cats = data.categorias;
+            if (data.liquidez) _liquidez = data.liquidez;
+          }
           renderCatManager();
         })
-        .getCategorias();
+        .getConfigData();
+      // Desenha já com o que estiver em memória, para o modal não abrir vazio.
+      renderCatManager();
+    }
+
+    /**
+     * Abre o modal de Categorias já na aba pedida.
+     * É o destino do "ajustar" no card de runway (SPEC-005).
+     */
+    function abrirModalCategoriasEm(tipo) {
+      _catTipoAtivo = tipo;
+      abrirModalCategorias();
     }
 
     function fecharModalCategorias() {
@@ -4091,10 +4241,15 @@
       // Nota informativa na aba unificada
       if (_catTipoAtivo === "Aporte") {
         contentHtml +=
-          '<div style="font-size:11px;color:var(--text-sec);background:var(--card-accent);' +
-          'border-radius:10px;padding:8px 12px;margin-bottom:10px;line-height:1.5;">' +
+          '<div class="liq-nota">' +
           '\uD83D\uDD04 Categorias compartilhadas entre <strong>Aportes</strong> e <strong>Resgates</strong>. ' +
           'Ao adicionar ou remover, ambos s\u00e3o atualizados automaticamente.' +
+          '</div>';
+        // SPEC-005: o seletor s\u00F3 faz sentido se a pessoa souber o que ele muda.
+        contentHtml +=
+          '<div class="liq-nota">' +
+          '\uD83D\uDCA7 A liquidez decide o que entra no seu <strong>runway</strong>. ' +
+          'S\u00F3 o que \u00E9 de alta liquidez conta como reserva para sobreviver.' +
           '</div>';
       }
 
@@ -4108,7 +4263,11 @@
       } else {
         for (var i = 0; i < arr.length; i++) {
           contentHtml += '<div class="cat-list-item">';
-          contentHtml += "  <span>" + arr[i] + "</span>";
+          contentHtml += '  <span class="cat-nome">' + arr[i] + "</span>";
+          // Seletor de liquidez só na aba de investimento — SPEC-005.
+          if (_catTipoAtivo === "Aporte") {
+            contentHtml += seletorLiquidezHtml(arr[i]);
+          }
           contentHtml +=
             '  <button class="cat-del-btn" onclick="removerCatUI(\'' +
             _catTipoAtivo.replace(/'/g, "\\'") +
@@ -4124,6 +4283,86 @@
     function selecionarTipoCat(tipo) {
       _catTipoAtivo = tipo;
       renderCatManager();
+    }
+
+    // ========== LIQUIDEZ DAS CATEGORIAS — SPEC-005 ==========
+
+    var LIQ_OPCOES = [
+      { valor: "alta", rotulo: "🟢 Alta" },
+      { valor: "media", rotulo: "🟡 Média" },
+      { valor: "baixa", rotulo: "🔴 Baixa" },
+    ];
+
+    /**
+     * <select> de liquidez de uma categoria de investimento.
+     * Categoria ainda não classificada cai em "alta" — mesmo padrão do
+     * backend, para a tela não discordar da planilha.
+     */
+    function seletorLiquidezHtml(nome) {
+      var atual = _liquidez[nome] || "alta";
+      var esc = nome.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+      // Mesmo escape inline de removerCatUI, logo abaixo — o nome vai para
+      // dentro de uma string JS num atributo onchange.
+      var html =
+        '<select class="liq-select" onchange="salvarLiquidezUI(\'' +
+        esc +
+        "', this)\">";
+      for (var i = 0; i < LIQ_OPCOES.length; i++) {
+        var o = LIQ_OPCOES[i];
+        html +=
+          '<option value="' +
+          o.valor +
+          '"' +
+          (o.valor === atual ? " selected" : "") +
+          ">" +
+          o.rotulo +
+          "</option>";
+      }
+      return html + "</select>";
+    }
+
+    /**
+     * Salva a liquidez e recarrega o dashboard.
+     *
+     * O recarregamento não é enfeite: é o que ensina para que serve o
+     * seletor — o runway muda na frente da pessoa.
+     */
+    function salvarLiquidezUI(nome, select) {
+      var anterior = _liquidez[nome] || "alta";
+      var novo = select.value;
+      if (novo === anterior) return;
+
+      vibrar(20);
+      select.disabled = true;
+      _liquidez[nome] = novo;
+
+      google.script.run
+        .withSuccessHandler(function (r) {
+          select.disabled = false;
+          if (r && r.success) {
+            showToast(r.msg || "✅ Liquidez atualizada.", "success");
+            // O runway depende disto: recarrega para o número acompanhar.
+            carregarDashboard();
+          } else {
+            // Um seletor mostrando "Baixa" enquanto a planilha guardou
+            // "Alta" é pior que o erro. Volta ao valor anterior.
+            _liquidez[nome] = anterior;
+            select.value = anterior;
+            showToast((r && r.msg) || "❌ Não foi possível salvar.", "error");
+          }
+        })
+        .withFailureHandler(function (err) {
+          select.disabled = false;
+          _liquidez[nome] = anterior;
+          select.value = anterior;
+          showToast(
+            "❌ Falha ao salvar liquidez: " +
+            (err && err.message ? err.message : err),
+            "error",
+          );
+        })
+        .salvarLiquidezCategoria(nome, novo);
     }
 
     function carregarCategoriasConfig() {
@@ -4499,7 +4738,51 @@
       }
     }
 
-    function desenharEvolucao(evoData) {
+    // Linhas de referência do burn rate — SPEC-004 (M-4).
+    //
+    // A de 3 meses nasce visível: é a que alimenta o runway, então é a que
+    // decide alguma coisa. As de 6 e 12 nascem desligadas e voltam com um
+    // toque na legenda — três tracejadas de uma vez num gráfico de 390 px
+    // viram ruído, não referência.
+    var BURN_ESTILO = {
+      3: { cor: "#f59e0b", tracejado: [6, 4], visivel: true },
+      6: { cor: "#8b5cf6", tracejado: [3, 4], visivel: false },
+      12: { cor: "#6b7280", tracejado: [2, 5], visivel: false },
+    };
+
+    function datasetsBurnRate(burnRate, nPontos) {
+      var out = [];
+      if (!burnRate || !burnRate.length || !nPontos) return out;
+
+      for (var i = 0; i < burnRate.length; i++) {
+        var b = burnRate[i];
+        // Janela sem nenhum mês com gasto registrado não vira linha: uma
+        // reta em zero diria que a pessoa não gastou nada.
+        if (b.valor === null || b.valor === undefined) continue;
+
+        var estilo = BURN_ESTILO[b.janela] || BURN_ESTILO[3];
+        var reta = [];
+        for (var k = 0; k < nPontos; k++) reta.push(b.valor);
+
+        out.push({
+          type: "line",
+          label: "Gasto médio " + b.janela + "m",
+          data: reta,
+          borderColor: estilo.cor,
+          borderWidth: 1.8,
+          borderDash: estilo.tracejado,
+          pointRadius: 0,
+          pointHitRadius: 0,
+          fill: false,
+          tension: 0,
+          hidden: !estilo.visivel,
+          order: 0,
+        });
+      }
+      return out;
+    }
+
+    function desenharEvolucao(evoData, burnRate) {
       var canvas = document.getElementById("chart_evolucao");
       if (!canvas) return;
       canvas.style.display = "";
@@ -4518,6 +4801,10 @@
       _chartInstances["chart_evolucao"] = new Chart(canvas, {
         data: {
           labels: evoData.labels,
+          // As linhas de burn rate vão DEPOIS na lista para a legenda ler
+          // "Entradas · Saídas · Saldo · Gasto médio 3m" — numa tela de
+          // 390 px a legenda quebra, e o que importa tem que vir primeiro.
+          // A ordem de desenho é controlada por `order`, não por esta lista.
           datasets: [
             {
               type: "bar",
@@ -4550,7 +4837,7 @@
               fill: true,
               order: 1,
             },
-          ],
+          ].concat(datasetsBurnRate(burnRate, (evoData.labels || []).length)),
         },
         options: {
           responsive: true,
@@ -4597,6 +4884,123 @@
               },
               grid: { color: gridColor },
               beginAtZero: true,
+            },
+          },
+          animation: { duration: 700 },
+        },
+      });
+    }
+
+    // ========== PATRIMÔNIO LÍQUIDO NO TEMPO — SPEC-004 (M-3) ==========
+    //
+    // Área EMPILHADA: a altura total responde "quanto eu tenho" e a
+    // composição responde "quanto está líquido". Duas linhas soltas
+    // obrigariam o usuário a somar de cabeça.
+    function desenharPatrimonio(serie) {
+      var canvas = document.getElementById("chart_patrimonio");
+      if (!canvas) return;
+
+      if (_chartInstances["chart_patrimonio"]) {
+        _chartInstances["chart_patrimonio"].destroy();
+      }
+
+      var isDark = document.body.getAttribute("data-theme") === "dark";
+      var textColor = isDark ? "#d1d5db" : "#374151";
+      var gridColor = isDark ? "rgba(55,65,81,0.5)" : "rgba(229,231,235,0.7)";
+
+      var labels = [];
+      var caixa = [];
+      var investido = [];
+      for (var i = 0; i < serie.length; i++) {
+        labels.push(rotuloMes(serie[i].mes));
+        caixa.push(serie[i].caixa);
+        investido.push(serie[i].investido);
+      }
+
+      _chartInstances["chart_patrimonio"] = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Caixa",
+              data: caixa,
+              borderColor: "#3b82f6",
+              backgroundColor: "rgba(59, 130, 246, 0.35)",
+              borderWidth: 2,
+              pointRadius: 2,
+              tension: 0.25,
+              fill: true,
+            },
+            {
+              label: "Investido",
+              data: investido,
+              borderColor: "#10b981",
+              backgroundColor: "rgba(16, 185, 129, 0.35)",
+              borderWidth: 2,
+              pointRadius: 2,
+              tension: 0.25,
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: "index" },
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                color: textColor,
+                font: { size: 11, family: "Inter" },
+                padding: 12,
+                usePointStyle: true,
+              },
+            },
+            tooltip: {
+              callbacks: {
+                label: function (ctx) {
+                  return (
+                    ctx.dataset.label +
+                    ": " +
+                    ctx.parsed.y.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  );
+                },
+                // O total é o número que interessa; as faixas explicam.
+                footer: function (itens) {
+                  var t = 0;
+                  for (var i = 0; i < itens.length; i++) t += itens[i].parsed.y;
+                  return (
+                    "Patrimônio: " +
+                    t.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  );
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: textColor, font: { size: 10 } },
+              grid: { display: false },
+            },
+            y: {
+              stacked: true,
+              ticks: {
+                color: textColor,
+                font: { size: 10 },
+                callback: function (v) {
+                  if (Math.abs(v) >= 1000) return (v / 1000).toFixed(0) + "k";
+                  return v;
+                },
+              },
+              grid: { color: gridColor },
             },
           },
           animation: { duration: 700 },
@@ -4800,6 +5204,86 @@
         (semReserva
           ? "sem reserva investida para sustentar seus gastos"
           : LEITURA_RUNWAY[rw.nivel] || "");
+
+      // Nota de liquidez (SPEC-005): só faz sentido quando parte da posição
+      // ficou de fora. Se tudo conta, explicar a diferença seria ruído.
+      var elNota = document.getElementById("runway-liquidez");
+      var total = rw.posicaoTotal;
+      if (total === undefined || total === null || total <= rw.posicao) {
+        elNota.style.display = "none";
+        return;
+      }
+      elNota.style.display = "block";
+      document.getElementById("runway-liquidez-txt").innerText =
+        "de " +
+        formatarMoeda(total) +
+        " investidos, " +
+        formatarMoeda(rw.posicao) +
+        " são de alta liquidez ·";
+    }
+
+    // ========== PATRIMÔNIO E BURN RATE — SPEC-004 ==========
+
+    function renderizarPatrimonio(p) {
+      var card = document.getElementById("card-patrimonio");
+
+      // Menos de 2 pontos não é série temporal: o card some em vez de
+      // desenhar um ponto solto e chamar de tendência.
+      if (!p || !p.serie || p.serie.length < 2) {
+        card.style.display = "none";
+        return;
+      }
+      card.style.display = "block";
+
+      var elVal = document.getElementById("patrimonio-val");
+      elVal.innerText = formatarMoeda(p.atual);
+
+      var elDelta = document.getElementById("patrimonio-delta");
+      if (p.delta > 0) {
+        elDelta.className = "patrimonio-delta saude-money sobe";
+        elDelta.innerText = "▲ " + formatarMoeda(p.delta) + " no período";
+      } else if (p.delta < 0) {
+        elDelta.className = "patrimonio-delta saude-money desce";
+        elDelta.innerText = "▼ " + formatarMoeda(Math.abs(p.delta)) + " no período";
+      } else {
+        elDelta.className = "patrimonio-delta saude-money";
+        elDelta.innerText = "sem variação no período";
+      }
+
+      // O olho já cobre .saude-money no togglePrivacy, mas a primeira
+      // renderização acontece antes de qualquer toque nele.
+      [elVal, elDelta].forEach(function (el) {
+        if (privacyMode) el.classList.add("privacy-mask");
+        else el.classList.remove("privacy-mask");
+      });
+
+      desenharPatrimonio(p.serie);
+    }
+
+    function renderizarBurnRate(burnRate) {
+      var el = document.getElementById("burn-legenda");
+      if (!burnRate || !burnRate.length) {
+        el.style.display = "none";
+        return;
+      }
+
+      var partes = [];
+      for (var i = 0; i < burnRate.length; i++) {
+        var b = burnRate[i];
+        if (b.valor === null || b.valor === undefined) continue;
+        partes.push(
+          b.janela + "m <strong>" + formatarMoeda(b.valor) + "</strong>",
+        );
+      }
+
+      if (!partes.length) {
+        el.style.display = "none";
+        return;
+      }
+      el.style.display = "block";
+      el.innerHTML = "Gasto médio: " + partes.join(" · ");
+      if (privacyMode) el.classList.add("privacy-mask");
+      else el.classList.remove("privacy-mask");
     }
 
     // ========== SPARKLINE SVG NATIVO (zero custo de performance) ==========
