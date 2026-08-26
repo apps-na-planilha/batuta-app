@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-26T05:28:20.933Z
+     Gerado em 2026-08-26T05:44:00.416Z
      ============================================================ -->
 <!doctype html>
 <html>
@@ -1417,7 +1417,7 @@
        liquidez não significa nada para Saída e Entrada, e um seletor
        cinza nas outras abas ensinaria a ignorá-lo. */
     .cat-list-item .cat-nome {
-      flex: 1;
+      flex: 1 1 auto;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1425,15 +1425,34 @@
       margin-right: 8px;
     }
 
+    /* Com o seletor, a linha tem TRÊS elementos. Em 390 px eles não cabem
+       lado a lado sem picotar o nome — e o nome é o que identifica a linha.
+       O seletor desce para a segunda linha, onde de quebra vira um alvo de
+       toque decente para o polegar. */
+    .cat-list-item.com-liquidez {
+      flex-wrap: wrap;
+      row-gap: 10px;
+    }
+
     .liq-select {
-      flex-shrink: 0;
-      margin-right: 8px;
-      padding: 6px 8px;
+      /* ⚠️ `width` aqui NÃO é decoração. Existe um `input, select { width:
+         100% }` global neste arquivo; sem reafirmar a largura, o seletor
+         engolia a linha inteira, zerava o nome (flex-basis 0 + min-width 0)
+         e empurrava o "Remover" para fora do card. Foi o que quebrou a tela
+         no primeiro deploy da Sprint 12. */
+      order: 3;
+      flex: 0 0 100%;
+      width: 100%;
+      box-sizing: border-box;
+      margin-right: 0;
+      padding: 10px 12px;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--input-bg);
       color: var(--text-main);
-      font-size: 12px;
+      /* 16px e não menos: abaixo disso o Safari do iPhone dá zoom ao focar
+         um controle de formulário, e a tela inteira pula. */
+      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
     }
@@ -1443,9 +1462,19 @@
       color: var(--text-sec);
       background: rgba(59, 130, 246, 0.08);
       border-radius: 10px;
-      padding: 8px 12px;
-      margin-bottom: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
       line-height: 1.5;
+    }
+
+    .liq-nota p {
+      margin: 0;
+    }
+
+    .liq-nota p + p {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
     }
 
     .cat-modal-add-row {
@@ -4238,18 +4267,19 @@
       var arr = cats[_catTipoAtivo] || [];
       var contentHtml = "";
 
-      // Nota informativa na aba unificada
+      // Nota informativa na aba unificada.
+      //
+      // As duas linhas moram na MESMA caixa de prop\u00F3sito: eram dois blocos
+      // azuis empilhados, e num celular isso empurrava a lista inteira para
+      // baixo da dobra antes de a pessoa ver a primeira categoria.
       if (_catTipoAtivo === "Aporte") {
         contentHtml +=
           '<div class="liq-nota">' +
-          '\uD83D\uDD04 Categorias compartilhadas entre <strong>Aportes</strong> e <strong>Resgates</strong>. ' +
-          'Ao adicionar ou remover, ambos s\u00e3o atualizados automaticamente.' +
-          '</div>';
-        // SPEC-005: o seletor s\u00F3 faz sentido se a pessoa souber o que ele muda.
-        contentHtml +=
-          '<div class="liq-nota">' +
-          '\uD83D\uDCA7 A liquidez decide o que entra no seu <strong>runway</strong>. ' +
-          'S\u00F3 o que \u00E9 de alta liquidez conta como reserva para sobreviver.' +
+          '<p>\uD83D\uDD04 Categorias compartilhadas entre <strong>Aportes</strong> e <strong>Resgates</strong>. ' +
+          'Ao adicionar ou remover, ambos s\u00e3o atualizados automaticamente.</p>' +
+          // SPEC-005: o seletor s\u00F3 faz sentido se a pessoa souber o que ele muda.
+          '<p>\uD83D\uDCA7 A liquidez decide o que entra no seu <strong>runway</strong>. ' +
+          'S\u00F3 o que \u00E9 de alta liquidez conta como reserva para sobreviver.</p>' +
           '</div>';
       }
 
@@ -4261,11 +4291,16 @@
       if (arr.length === 0) {
         contentHtml += '<div class="empty-state">Nenhuma categoria cadastrada.</div>';
       } else {
+        // Seletor de liquidez só na aba de investimento — SPEC-005.
+        var comLiquidez = _catTipoAtivo === "Aporte";
+
         for (var i = 0; i < arr.length; i++) {
-          contentHtml += '<div class="cat-list-item">';
+          contentHtml +=
+            '<div class="cat-list-item' +
+            (comLiquidez ? " com-liquidez" : "") +
+            '">';
           contentHtml += '  <span class="cat-nome">' + arr[i] + "</span>";
-          // Seletor de liquidez só na aba de investimento — SPEC-005.
-          if (_catTipoAtivo === "Aporte") {
+          if (comLiquidez) {
             contentHtml += seletorLiquidezHtml(arr[i]);
           }
           contentHtml +=
