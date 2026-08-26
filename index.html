@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-26T14:56:08.509Z
+     Gerado em 2026-08-26T15:43:46.957Z   ·   Versão 4.1.0
      ============================================================ -->
 <!doctype html>
 <html>
@@ -1390,6 +1390,26 @@
       transition: all 0.15s;
     }
 
+    /* Três opções não cabem lado a lado em 390 px. column-reverse mantém a
+       ordem do DOM e joga o Cancelar para o fim da pilha, onde o polegar cai;
+       a ação mais estreita fica no topo. Ver SPEC-010. */
+    .confirm-box .confirm-btns.empilhado {
+      flex-direction: column-reverse;
+    }
+
+    /* A opção mais ampla é a contornada: destrutiva, mas sem competir em peso
+       visual com a mais estreita. Dois botões vermelhos sólidos empilhados
+       viram uma escolha no escuro. */
+    .confirm-box .btn-danger-outline {
+      background: transparent;
+      color: #ef4444;
+      border: 1px solid #ef4444;
+    }
+
+    .confirm-box .btn-danger-outline:hover {
+      background: rgba(239, 68, 68, 0.12);
+    }
+
     .confirm-box .btn-cancel {
       background: rgba(255, 255, 255, 0.08);
       color: var(--text-secondary, #94a3b8);
@@ -2347,6 +2367,39 @@
     <button class="cat-open-btn" onclick="abrirOnboarding()">
       🗺️ Ver onboarding novamente
     </button>
+
+    <!-- Indicador de versão (14.4) — atrás do modo desenvolvedor. Mostra os
+         DOIS lados porque o que morde é o deploy pela metade: publicar a PWA
+         sem implantar o script, ou o contrário. -->
+    <div id="painel-versao" style="
+          display: none;
+          margin-top: 24px;
+          padding: 14px;
+          border: 1px dashed var(--border);
+          border-radius: 12px;
+          background: var(--card);
+          font-size: 12px;
+          color: var(--text-muted);
+          line-height: 1.5;
+        ">
+      <div style="font-weight: 700; margin-bottom: 8px">🧪 Versão</div>
+      <div>
+        <strong>PWA</strong>
+        <span id="versao-pwa">--</span>
+      </div>
+      <div>
+        <strong>API</strong>
+        <span id="versao-api">--</span>
+      </div>
+      <div id="versao-divergencia" style="
+            display: none;
+            margin-top: 8px;
+            color: var(--warning, #f59e0b);
+            font-weight: 600;
+          ">
+        ⚠️ Deploy pela metade: as duas pontas estão em versões diferentes.
+      </div>
+    </div>
   </div>
 
   <!-- MODAL: GERENCIAR CATEGORIAS (full-screen) -->
@@ -2542,9 +2595,30 @@
             font-weight: 500;
             line-height: 1.4;
           ">
-        ⚠️ <strong>Aviso:</strong> Você está editando apenas uma parcela desta
-        compra. Qualquer alteração de valor ou data afetará somente este mês
-        específico.
+        <div id="edit-parcela-texto">
+          ⚠️ <strong>Aviso:</strong> Você está editando apenas uma parcela desta
+          compra. Qualquer alteração de valor ou data afetará somente este mês
+          específico.
+        </div>
+        <label id="edit-parcela-todas-linha" style="
+              display: none;
+              align-items: flex-start;
+              gap: 8px;
+              margin-top: 10px;
+              cursor: pointer;
+            ">
+          <input type="checkbox" id="edit-parcela-todas" style="
+                width: 18px;
+                min-width: 18px;
+                height: 18px;
+                margin: 1px 0 0;
+                box-sizing: border-box;
+                flex-shrink: 0;
+              " />
+          <span id="edit-parcela-todas-label">
+            Aplicar categoria e descrição a todas as parcelas
+          </span>
+        </label>
       </div>
 
       <div class="form-group">
@@ -2665,8 +2739,9 @@
       }
     })();
 
-    // Dispara o dashboard com o filtro já definido (mês atual)
-    carregarDashboard();
+    // Dispara o dashboard com o filtro já definido (mês atual).
+    // O tour de boas-vindas é decidido AQUI, no boot, e em lugar nenhum mais.
+    carregarDashboard(avaliarTourNoBoot);
 
     // Prefetch: busca dados do backend em paralelo ao carregamento do Charts
     // para que quando o callback acima rodar, os dados possam já estar prontos
@@ -2685,6 +2760,16 @@
     })();
 
     // --- ESTADOS GLOBAIS ---
+    /** Some com o bloco de parcela e desmarca a propagação para o grupo. */
+    function esconderAvisoParcela() {
+      var warnEl = document.getElementById("edit-warning-parcela");
+      if (warnEl) warnEl.style.display = "none";
+      var linhaTodas = document.getElementById("edit-parcela-todas-linha");
+      if (linhaTodas) linhaTodas.style.display = "none";
+      var caixaTodas = document.getElementById("edit-parcela-todas");
+      if (caixaTodas) caixaTodas.checked = false;
+    }
+
     function resetFormToNew() {
       document.getElementById("financeForm").reset();
       document.getElementById("tx-id").value = "";
@@ -2694,8 +2779,7 @@
       document.getElementById("dataPrimeiraParcela").valueAsDate = new Date();
       document.getElementById("valor").value = "";
 
-      var warnEl = document.getElementById("edit-warning-parcela");
-      if (warnEl) warnEl.style.display = "none";
+      esconderAvisoParcela();
 
       atualizarCategorias();
     }
@@ -2983,7 +3067,7 @@
     // ║  carregarDashboard, renderizarDash (KPIs, gráficos, meta)    ║
     // ╚══════════════════════════════════════════════════════════════╝
 
-    function carregarDashboard() {
+    function carregarDashboard(aoCarregar) {
       document.getElementById("loading").style.display = "block";
       document.getElementById("dash-content").style.display = "none";
       document.getElementById("welcome-screen").style.display = "none"; // Hide welcome screen also
@@ -2993,11 +3077,17 @@
       if (_prefetchDone && filtro === "TODOS") {
         _prefetchDone = false; // Usa apenas uma vez
         renderizarDash(_prefetchedData);
+        if (typeof aoCarregar === "function") aoCarregar(_prefetchedData);
         return;
       }
 
       google.script.run
-        .withSuccessHandler(renderizarDash)
+        .withSuccessHandler(function (dados) {
+          renderizarDash(dados);
+          // Só o boot passa algo aqui. Quem chama sem argumento — troca de mês,
+          // pós-salvar, pós-excluir — não dispara efeito nenhum. Ver 14.2.
+          if (typeof aoCarregar === "function") aoCarregar(dados);
+        })
         .withFailureHandler(function (err) {
           document.getElementById("loading").style.display = "none";
           document.getElementById("dash-content").style.display = "block";
@@ -3013,15 +3103,9 @@
       dadosGlobais = dados;
       document.getElementById("loading").style.display = "none";
 
-      // Auto-abrir onboarding se o backend disser que está pendente, limitando a 1x por sessão do navegador
-      if (
-        dados &&
-        dados.onboardingCompleted === false &&
-        typeof obCompletedInSession !== "undefined" &&
-        !obCompletedInSession
-      ) {
-        abrirOnboarding();
-      }
+      // A decisão sobre o tour NÃO mora aqui — ver avaliarTourNoBoot() e a 14.2.
+      // Esta função roda a cada troca de mês (e em mais cinco lugares); abrir o
+      // tour é evento de boot. A guarda aqui reabria o tour a cada troca.
 
       var filtroAtivo = document.getElementById("mesFilter").value;
       var estaVazio =
@@ -3537,9 +3621,9 @@
             tJson +
             ')\' title="Repetir">🔄</button>';
           htmlLista +=
-            '    <button style="background:none;border:none;cursor:pointer;font-size:16px;opacity:0.7" onclick="event.stopPropagation(); deletarItem(\'' +
-            t.id +
-            "')\">🗑️</button>";
+            '    <button style="background:none;border:none;cursor:pointer;font-size:16px;opacity:0.7" onclick=\'event.stopPropagation(); deletarItem(' +
+            tJson +
+            ')\'>🗑️</button>';
           htmlLista += "  </div>";
           htmlLista += "</div>";
         });
@@ -3600,6 +3684,14 @@
     // ║  repetirTransacao, prepararEdicao (lê/preenche form)         ║
     // ╚══════════════════════════════════════════════════════════════╝
 
+    // Descrição de parcela criada antes de o Group_Id ser lido. Só serve para
+    // decidir se o aviso aparece — nunca para agrupar linhas.
+    var RE_PARCELA_DESC = /\(\d+\/\d+\)$/;
+    var AVISO_PARCELA_SOLTA =
+      "⚠️ <strong>Aviso:</strong> Você está editando apenas uma parcela desta " +
+      "compra. Qualquer alteração de valor ou data afetará somente este mês " +
+      "específico.";
+
     function repetirTransacao(t) {
       vibrar(30);
       // Reset ID (Repetir cria novo, não edita)
@@ -3609,8 +3701,7 @@
       document.querySelector("#view-form h2").innerText = "Novo Lançamento";
       document.getElementById("btnSalvar").innerText = "CONFIRMAR LANÇAMENTO";
 
-      var warnEl = document.getElementById("edit-warning-parcela");
-      if (warnEl) warnEl.style.display = "none";
+      esconderAvisoParcela();
 
       // Preenche o formulário
       document.getElementById("tipo").value = t.tipo;
@@ -3640,11 +3731,38 @@
       document.querySelector("#view-form h2").innerText = "Editar Transação";
       document.getElementById("btnSalvar").innerText = "ATUALIZAR";
 
-      // Detecta se é a edição de uma linha de parcela
-      var isParcela = t.desc && /\(\d+\/\d+\)$/.test(t.desc.trim());
+      // Parcelamento: o Group_Id manda (SPEC-010). A regex sobre a descrição
+      // ainda vale para linha ANTIGA, criada antes de a coluna G ser lida —
+      // essa mostra o aviso, mas não a opção de propagar: não há como agrupá-la
+      // com segurança, e agrupar por descrição parecida casaria compras
+      // diferentes com o mesmo nome.
+      var nParcelas = t.parcelas || 0;
+      var parcelaAntiga =
+        !nParcelas && t.desc && RE_PARCELA_DESC.test(t.desc.trim());
       var warnEl = document.getElementById("edit-warning-parcela");
+      var textoEl = document.getElementById("edit-parcela-texto");
+      var linhaTodas = document.getElementById("edit-parcela-todas-linha");
+      var caixaTodas = document.getElementById("edit-parcela-todas");
+
+      if (caixaTodas) caixaTodas.checked = false;
       if (warnEl) {
-        warnEl.style.display = isParcela ? "block" : "none";
+        warnEl.style.display =
+          nParcelas > 1 || parcelaAntiga ? "block" : "none";
+      }
+      if (linhaTodas) linhaTodas.style.display = nParcelas > 1 ? "flex" : "none";
+      if (textoEl) {
+        textoEl.innerHTML =
+          nParcelas > 1
+            ? "⚠️ <strong>Parcela " +
+              t.parcela +
+              " de " +
+              nParcelas +
+              ".</strong> Valor e data mudam só nesta."
+            : AVISO_PARCELA_SOLTA;
+      }
+      if (caixaTodas && nParcelas > 1) {
+        document.getElementById("edit-parcela-todas-label").textContent =
+          "Aplicar categoria e descrição às " + nParcelas + " parcelas";
       }
 
       // Preenche campos
@@ -3681,6 +3799,63 @@
     var _configCache = null;
     var _modoDev = false; // definido por getConfigData(); ver MODO_DEV no schema
 
+    // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
+    // propósito: "dev" na tela é a informação certa quando alguém está olhando
+    // o Index.html servido direto, sem passar pelo build. Ver 14.4.
+    var VERSAO_PWA = "4.1.0";
+    var BUILD_PWA = "2026-08-26T15:43:46.957Z";
+
+    /**
+     * ISO do build em algo que se lê de relance: "26/08/2026 14:56".
+     * Data crua é ruído numa tela de 390 px, e a hora é o que importa para
+     * saber se o deploy que acabou de sair é este.
+     */
+    function _horaDoBuild(iso) {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      var p = function (x) {
+        return ("0" + x).slice(-2);
+      };
+      return (
+        p(d.getDate()) +
+        "/" +
+        p(d.getMonth() + 1) +
+        "/" +
+        d.getFullYear() +
+        " " +
+        p(d.getHours()) +
+        ":" +
+        p(d.getMinutes())
+      );
+    }
+
+    /**
+     * Mostra as duas versões e denuncia quando divergem.
+     *
+     * Só aparece com o modo desenvolvedor ligado. Um número sozinho não
+     * resolveria nada: o problema real é publicar metade — npm run publicar
+     * sem clasp deploy, ou o contrário. Ver 14.4 em docs/06-roadmap.md.
+     *
+     * @param {string} versaoApi - VERSAO_APP do código implantado
+     */
+    function renderizarVersao(versaoApi) {
+      var painel = document.getElementById("painel-versao");
+      if (!painel) return;
+      painel.style.display = _modoDev ? "" : "none";
+      if (!_modoDev) return;
+
+      document.getElementById("versao-pwa").textContent =
+        VERSAO_PWA + (BUILD_PWA ? " · " + _horaDoBuild(BUILD_PWA) : "");
+      document.getElementById("versao-api").textContent = versaoApi || "?";
+
+      // "dev" é a fonte servida sem build — não é divergência de deploy.
+      var divergem =
+        VERSAO_PWA !== "dev" && !!versaoApi && VERSAO_PWA !== versaoApi;
+      document.getElementById("versao-divergencia").style.display = divergem
+        ? ""
+        : "none";
+    }
+
     function carregarConfig() {
       var container = document.getElementById("config-list");
 
@@ -3698,6 +3873,7 @@
         .withSuccessHandler(function (data) {
           _configCache = data;
           _modoDev = data.modoDev === true;
+          renderizarVersao(data.versaoApi);
 
           if (data.categorias) {
             cats = data.categorias;
@@ -5849,6 +6025,11 @@
         isParcelado: isParcelado,
         parcelas: isParcelado ? numParcelas : 1,
         dataPrimeiraParcela: isParcelado ? dataPrimeiraParcela : null,
+        // Só tem efeito em edição de linha que pertence a um parcelamento.
+        escopoEdicao: (document.getElementById("edit-parcela-todas") || {})
+          .checked
+          ? "grupo"
+          : "",
       };
 
       var btn = document.getElementById("btnSalvar");
@@ -5887,15 +6068,35 @@
         .salvarTransacao(formObj);
     }
 
-    function deletarItem(id) {
+    function deletarItem(t) {
       vibrar(30);
-      customConfirm(
-        "🗑️",
-        "Excluir transação?",
-        "Essa ação não pode ser desfeita.",
-        "Excluir",
-      ).then(function (ok) {
-        if (!ok) return;
+      // Aceita o item inteiro; a forma antiga (só o id) continua valendo para
+      // não deixar nenhuma chamada esquecida quebrar em silêncio.
+      var alvo = typeof t === "string" ? { id: t } : t || {};
+      var n = alvo.parcelas || 0;
+
+      // Parcelamento vira escolha de três: apagar esta, apagar a compra, ou
+      // desistir. Lançamento comum continua com as duas de sempre. SPEC-010.
+      var pergunta =
+        n > 1
+          ? customConfirm(
+              "🗑️",
+              "Excluir parcela " + alvo.parcela + " de " + n + "?",
+              "Esta compra foi lançada em " +
+                n +
+                " parcelas. Você pode apagar só esta ou o parcelamento inteiro.",
+              "Só esta",
+              "As " + n + " parcelas",
+            )
+          : customConfirm(
+              "🗑️",
+              "Excluir transação?",
+              "Essa ação não pode ser desfeita.",
+              "Excluir",
+            );
+
+      pergunta.then(function (escolha) {
+        if (!escolha) return;
         vibrar(50);
         document.getElementById("loading").style.display = "block";
         google.script.run
@@ -5903,7 +6104,7 @@
             showToast(res.msg, res.success ? "success" : "error");
             carregarDashboard();
           })
-          .excluirTransacaoPorId(id);
+          .excluirTransacaoPorId(alvo.id, escolha === "extra" ? "grupo" : "");
       });
     }
 
@@ -5913,7 +6114,7 @@
      * @param {string} msg - Mensagem descritiva
      * @param {string} [confirmText] - Texto do botão de confirmação (padrão: 'Confirmar')
      */
-    function customConfirm(icon, title, msg, confirmText) {
+    function customConfirm(icon, title, msg, confirmText, extraText) {
       return new Promise(function (resolve) {
         var overlay = document.getElementById("confirm-overlay");
         document.getElementById("confirm-icon").textContent = icon || "⚠️";
@@ -5922,6 +6123,20 @@
         document.getElementById("confirm-msg").textContent = msg || "";
         var btnOk = document.getElementById("confirm-btn-ok");
         btnOk.textContent = confirmText || "Confirmar";
+
+        // A terceira opção existe só quando quem chama pede: com ela, a linha
+        // de botões vira pilha — três não cabem em 390 px. Ver SPEC-010.
+        var btnExtra = document.getElementById("confirm-btn-extra");
+        var btnsEl = document.getElementById("confirm-btns");
+        if (extraText) {
+          btnExtra.textContent = extraText;
+          btnExtra.style.display = "";
+          btnsEl.classList.add("empilhado");
+        } else {
+          btnExtra.style.display = "none";
+          btnsEl.classList.remove("empilhado");
+        }
+
         overlay.classList.add("open");
         var btnCancel = document.getElementById("confirm-btn-cancel");
 
@@ -5929,12 +6144,17 @@
           overlay.classList.remove("open");
           btnOk.removeEventListener("click", onOk);
           btnCancel.removeEventListener("click", onCancel);
+          btnExtra.removeEventListener("click", onExtra);
           overlay.removeEventListener("click", onOverlay);
           resolve(result);
         }
         function onOk() {
           vibrar(50);
           cleanup(true);
+        }
+        function onExtra() {
+          vibrar(50);
+          cleanup("extra");
         }
         function onCancel() {
           cleanup(false);
@@ -5944,6 +6164,7 @@
         }
 
         btnOk.addEventListener("click", onOk);
+        btnExtra.addEventListener("click", onExtra);
         btnCancel.addEventListener("click", onCancel);
         overlay.addEventListener("click", onOverlay);
       });
@@ -6023,7 +6244,31 @@
 
     var currentObStep = 0;
     var totalObSteps = 6;
-    var obCompletedInSession = false; // Evita loop de abertura ou requisições duplicadas
+    // Verdadeira só depois que o BACKEND confirmou a gravação. Marcar antes era
+    // o segundo dos três defeitos da 14.2: uma falha de rede deixava o local
+    // dizendo "concluído" e o remoto dizendo "pendente", e o bug voltava depois.
+    var obCompletedInSession = false;
+    var _obBootAvaliado = false; // uma decisão de abrir por carregamento do app
+    var _obEnvioEmCurso = false; // evita requisição duplicada em voo
+
+    /**
+     * Decide UMA vez por carregamento do app se o tour deve abrir.
+     *
+     * Chamada só pelo boot — ver carregarDashboard(avaliarTourNoBoot). A trava
+     * _obBootAvaliado é cinto e suspensório: mesmo que alguém volte a chamar
+     * isto de dentro de uma função de render, o tour não reabre.
+     *
+     * @param {Object} dados - payload do getDadosDashboard
+     * @return {boolean} true se o tour foi aberto
+     */
+    function avaliarTourNoBoot(dados) {
+      if (_obBootAvaliado) return false;
+      _obBootAvaliado = true;
+      if (!dados || dados.onboardingCompleted !== false) return false;
+      if (obCompletedInSession) return false;
+      abrirOnboarding();
+      return true;
+    }
 
     function abrirOnboarding() {
       vibrar(30);
@@ -6096,10 +6341,21 @@
     }
 
     function concluirOnboardingViaBackend() {
-      if (!obCompletedInSession) {
-        obCompletedInSession = true;
-        google.script.run.concluirOnboarding();
-      }
+      if (obCompletedInSession || _obEnvioEmCurso) return;
+      _obEnvioEmCurso = true;
+      google.script.run
+        .withSuccessHandler(function () {
+          _obEnvioEmCurso = false;
+          obCompletedInSession = true; // só agora: o backend confirmou
+        })
+        .withFailureHandler(function (err) {
+          // Falhou: o remoto continua "pendente". Manter o local pendente também
+          // é o que mantém os dois lados de acordo — o tour volta no próximo
+          // boot, em vez de sumir para sempre com a gravação perdida.
+          _obEnvioEmCurso = false;
+          console.error("concluirOnboarding falhou: " + err);
+        })
+        .concluirOnboarding();
     }
   </script>
 
@@ -6109,8 +6365,11 @@
       <div id="confirm-icon" class="confirm-icon"></div>
       <div id="confirm-title" class="confirm-title"></div>
       <div id="confirm-msg" class="confirm-msg"></div>
-      <div class="confirm-btns">
+      <div class="confirm-btns" id="confirm-btns">
         <button id="confirm-btn-cancel" class="btn-cancel">Cancelar</button>
+        <button id="confirm-btn-extra" class="btn-danger-outline" style="display: none">
+          Opção
+        </button>
         <button id="confirm-btn-ok" class="btn-danger">Confirmar</button>
       </div>
     </div>
