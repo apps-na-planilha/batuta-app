@@ -63,7 +63,7 @@
       return ["salvarTransacao", "POST", { transacao: a[0] }];
     },
     excluirTransacaoPorId: function (a) {
-      return ["excluirTransacao", "POST", { id: a[0] }];
+      return ["excluirTransacao", "POST", { id: a[0], escopo: a[1] || "" }];
     },
     salvarTodosOrcamentos: function (a) {
       return ["salvarOrcamentos", "POST", { lista: a[0] }];
