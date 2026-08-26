@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-26T05:56:32.459Z
+     Gerado em 2026-08-26T14:56:08.509Z
      ============================================================ -->
 <!doctype html>
 <html>
@@ -341,6 +341,81 @@
       color: var(--primary);
       text-decoration: underline;
       cursor: pointer;
+    }
+
+    /* FORA DO PADRÃO — SPEC-008 (M-15) */
+    .anomalia-item {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .anomalia-item:first-of-type {
+      border-top: none;
+      padding-top: 4px;
+    }
+
+    .anomalia-nome {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .anomalia-razao {
+      flex-shrink: 0;
+      font-size: 15px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .anomalia-razao.atipico {
+      color: var(--danger);
+    }
+
+    .anomalia-razao.alto {
+      color: var(--warn);
+    }
+
+    .anomalia-detalhe {
+      font-size: 11px;
+      color: var(--text-sec);
+      margin-top: 2px;
+    }
+
+    /* SELO DE CONFIABILIDADE — SPEC-007 (M-22).
+       Só aparece quando há o que dizer: um selo verde permanente vira
+       decoração, e decoração ensina a ignorar o âmbar do mês que importa. */
+    .selo-cobertura {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      line-height: 1.4;
+      padding: 8px 12px;
+      margin: -12px 0 20px;
+      border-radius: 10px;
+      background: rgba(217, 119, 6, 0.1);
+      color: var(--warn);
+      font-weight: 600;
+    }
+
+    .selo-cobertura.baixa {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
+
+    /* CURVA DE QUEIMA — SPEC-006 (M-8) */
+    .queima-legenda {
+      font-size: 11px;
+      text-align: center;
+      color: var(--text-sec);
+      margin: 6px 0 16px;
     }
 
     /* PATRIMÔNIO NO TEMPO — SPEC-004 (M-3) */
@@ -1961,6 +2036,9 @@
         </div>
       </div>
 
+      <!-- SELO DE CONFIABILIDADE — SPEC-007 (M-22) -->
+      <div class="selo-cobertura" id="selo-cobertura" style="display: none"></div>
+
       <!-- SAÚDE FINANCEIRA — SPEC-001 (M-1) e M-2.
            Escondidos por padrão: sem base para calcular, o card não aparece
            em vez de mostrar zero. -->
@@ -1975,6 +2053,7 @@
             </div>
           </div>
           <div class="saude-leitura" id="taxa-leitura"></div>
+          <div class="saude-nota" id="taxa-atipico" style="display: none"></div>
         </div>
 
         <div class="card" id="card-runway" style="display: none">
@@ -1995,6 +2074,24 @@
               ajustar
             </button>
           </div>
+        </div>
+
+        <!-- FORA DO PADRAO — SPEC-008 (M-15). Nasce escondido: nada fora do
+             padrao e o estado desejavel, e o card some. -->
+        <div class="card" id="card-anomalias" style="display: none">
+          <h3>🔎 FORA DO PADRÃO <span id="anomalias-mes" class="saude-mes"></span></h3>
+          <div id="anomalias-lista"></div>
+        </div>
+
+        <!-- PROJECAO DE FIM DE MES — SPEC-006 (M-7).
+             Nasce escondido e so existe no mes corrente: projetar mes fechado
+             nao e previsao. -->
+        <div class="card" id="card-projecao" style="display: none">
+          <h3>NO RITMO ATUAL <span id="projecao-mes" class="saude-mes"></span></h3>
+          <div class="val saude-val saude-money" id="val-projecao">—</div>
+          <div class="saude-leitura" id="projecao-delta"></div>
+          <div class="saude-nota" id="projecao-metodo"></div>
+          <div class="saude-nota" id="projecao-atipico" style="display: none"></div>
         </div>
       </div>
 
@@ -2035,6 +2132,11 @@
 
       <div id="orcamento-section" class="chart-container budget-section" style="display: none">
         <div class="chart-title">📏 Orçamento do Mês</div>
+        <!-- CURVA DE QUEIMA — SPEC-006 (M-8) -->
+        <div id="queima-wrap" style="display: none">
+          <canvas id="chart_queima" style="width: 100%; max-height: 200px"></canvas>
+          <div class="queima-legenda">Gasto acumulado vs a linha ideal do mês</div>
+        </div>
         <div id="orcamento-bars"></div>
       </div>
 
@@ -3060,6 +3162,19 @@
       renderizarPatrimonio(dados.patrimonio);
       renderizarBurnRate(dados.burnRate);
 
+      // 2d. O mês em curso: projeção de fechamento (SPEC-006)
+      renderizarProjecao(dados.projecao, dados.mesReferencia);
+
+      // 2e. Selo de confiabilidade (SPEC-007)
+      renderizarCobertura(dados.cobertura);
+
+      // 2f. Onde o mês está fora do padrão (SPEC-008)
+      renderizarAnomalias(dados.anomalias, dados.mesReferencia);
+
+      // 2g. Diz quais meses ficaram de fora das médias (SPEC-009)
+      renderizarNotaAtipico("taxa-atipico", dados.mesesAtipicos);
+      renderizarNotaAtipico("projecao-atipico", dados.mesesAtipicos);
+
       // 3. Lista de Transações (via paginação server-side)
       // Limpar campo de busca ao trocar de mês
       document.getElementById("searchTx").value = "";
@@ -3080,6 +3195,9 @@
       });
       if (orcComGasto.length > 0) {
         orcSection.style.display = "block";
+        // Curva de queima antes das barras: ela responde "estou adiantado?",
+        // as barras respondem "em qual categoria?". Ver SPEC-006.
+        renderizarCurvaQueima(dados.curvaQueima);
         var htmlOrc = "";
         orcComGasto.forEach(function (o) {
           var pct = o.percentual;
@@ -3111,6 +3229,7 @@
         orcContainer.innerHTML = htmlOrc;
       } else {
         orcSection.style.display = "none";
+        renderizarCurvaQueima(null);
       }
 
       // 5. Gráficos
@@ -5320,6 +5439,275 @@
       if (privacyMode) el.classList.add("privacy-mask");
       else el.classList.remove("privacy-mask");
     }
+
+    // ========== MESES ATÍPICOS — SPEC-009 ==========
+    //
+    // Férias, PLR, 13º, um mês quase sem registro. O app tira esses meses
+    // das linhas de base — e AVISA que tirou. Mexer no número em silêncio é
+    // o que faz a pessoa perder a confiança quando confere na mão.
+    var MOTIVO_ATIPICO = {
+      evento: "mês fora da curva",
+      subregistro: "quase sem lançamentos",
+    };
+
+    function textoMesesAtipicos(lista) {
+      if (!lista || !lista.length) return "";
+      var partes = [];
+      for (var i = 0; i < lista.length; i++) {
+        partes.push(
+          rotuloMes(lista[i].mes) +
+            " (" +
+            (MOTIVO_ATIPICO[lista[i].motivo] || "atípico") +
+            ")",
+        );
+      }
+      return (
+        (partes.length > 1 ? "fora da média: " : "fora da média: ") +
+        partes.join(" · ")
+      );
+    }
+
+    function renderizarNotaAtipico(id, lista) {
+      var el = document.getElementById(id);
+      var texto = textoMesesAtipicos(lista);
+      if (!texto) {
+        el.style.display = "none";
+        return;
+      }
+      el.style.display = "block";
+      el.innerText = texto;
+    }
+
+    // ========== FORA DO PADRÃO — SPEC-008 (M-15) ==========
+    //
+    // No máximo 4 linhas: uma lista longa deixa de ser "olhe aqui" e vira
+    // outro extrato. O corte é por relevância, e a ordem já vem do backend.
+    var MAX_ANOMALIAS = 4;
+
+    function renderizarAnomalias(lista, mesReferencia) {
+      var card = document.getElementById("card-anomalias");
+      if (!lista || !lista.length) {
+        card.style.display = "none";
+        return;
+      }
+      card.style.display = "block";
+      document.getElementById("anomalias-mes").innerText = rotuloMes(mesReferencia);
+
+      var html = "";
+      for (var i = 0; i < lista.length && i < MAX_ANOMALIAS; i++) {
+        var a = lista[i];
+        html += '<div class="anomalia-item"><div style="min-width:0">';
+        html += '  <div class="anomalia-nome">' + a.categoria + "</div>";
+        html += '  <div class="anomalia-detalhe">';
+        html += a.nova
+          ? "categoria nova — já é " + a.share + "% do mês"
+          : a.share + "% do mês, contra " + a.shareTipico + "% de costume";
+        html += "</div></div>";
+        html +=
+          '  <div class="anomalia-razao ' + a.nivel + '">' +
+          (a.nova ? "nova" : num1(a.razao) + "×") +
+          "</div>";
+        html += "</div>";
+      }
+      document.getElementById("anomalias-lista").innerHTML = html;
+    }
+
+    // ========== SELO DE CONFIABILIDADE — SPEC-007 (M-22) ==========
+    //
+    // Nível "boa" não desenha nada. O selo existe para o mês em que os
+    // números provavelmente estão incompletos, e só vale se for raro.
+    function renderizarCobertura(c) {
+      var el = document.getElementById("selo-cobertura");
+      if (!c || c.nivel === "boa") {
+        el.style.display = "none";
+        return;
+      }
+      el.style.display = "flex";
+      el.className = "selo-cobertura " + c.nivel;
+      el.innerText =
+        c.nivel === "parcial"
+          ? "◐ registro parcial: " +
+            c.semanasComLancamento +
+            " de " +
+            c.semanas +
+            " semanas com lançamentos neste mês"
+          : "○ poucos lançamentos neste mês — seus números podem estar subestimados";
+    }
+
+    // ========== O MÊS EM CURSO — SPEC-006 ==========
+    //
+    // A regra aqui é a mesma dos cards de saúde: sem base honesta, o card
+    // não aparece. A diferença é que este some por um motivo a mais — ele
+    // só existe no mês corrente, e o backend já devolve null nos outros.
+
+    function renderizarProjecao(p, mesReferencia) {
+      var card = document.getElementById("card-projecao");
+      if (!p) {
+        card.style.display = "none";
+        return;
+      }
+      card.style.display = "block";
+      document.getElementById("projecao-mes").innerText = rotuloMes(mesReferencia);
+
+      var elVal = document.getElementById("val-projecao");
+      elVal.innerText = formatarMoeda(p.projecao);
+      if (privacyMode) elVal.classList.add("privacy-mask");
+      else elVal.classList.remove("privacy-mask");
+
+      // A comparação com a média é o que dá sentido ao número. Sozinho,
+      // "R$ 14.200" não diz se é muito ou pouco.
+      var elDelta = document.getElementById("projecao-delta");
+      if (p.delta === null || p.mediaHistorica === null) {
+        elDelta.className = "saude-leitura vazio";
+        elDelta.innerText = "ainda sem meses anteriores para comparar";
+      } else if (Math.abs(p.delta) < 1) {
+        elDelta.className = "saude-leitura vazio";
+        elDelta.innerText = "em linha com a sua média de 3 meses";
+      } else if (p.delta > 0) {
+        elDelta.className = "saude-leitura saude-money atencao";
+        elDelta.innerText =
+          "▲ " + formatarMoeda(p.delta) + " acima da sua média de 3 meses";
+      } else {
+        elDelta.className = "saude-leitura saude-money saudavel";
+        elDelta.innerText =
+          "▼ " + formatarMoeda(Math.abs(p.delta)) + " abaixo da sua média de 3 meses";
+      }
+      if (privacyMode) elDelta.classList.add("privacy-mask");
+
+      // O rodapé é obrigatório: um número de previsão sem dizer de onde veio
+      // convida a confiança que ele ainda não merece.
+      document.getElementById("projecao-metodo").innerText =
+        p.metodo === "perfil"
+          ? "estimativa baseada em como seus meses costumam se distribuir"
+          : "estimativa grosseira — ainda não há histórico suficiente para afinar";
+    }
+
+    function renderizarCurvaQueima(c) {
+      var wrap = document.getElementById("queima-wrap");
+      if (!c || !c.dias || c.dias.length < 2) {
+        wrap.style.display = "none";
+        return;
+      }
+      wrap.style.display = "block";
+      desenharCurvaQueima(c);
+    }
+
+    function desenharCurvaQueima(c) {
+      var canvas = document.getElementById("chart_queima");
+      if (!canvas) return;
+
+      if (_chartInstances["chart_queima"]) {
+        _chartInstances["chart_queima"].destroy();
+      }
+
+      var isDark = document.body.getAttribute("data-theme") === "dark";
+      var textColor = isDark ? "#d1d5db" : "#374151";
+      var gridColor = isDark ? "rgba(55,65,81,0.5)" : "rgba(229,231,235,0.7)";
+
+      // Cor pelo último ponto real: acima da diagonal é adiantado.
+      var ultimo = null;
+      var idealNoPonto = 0;
+      for (var i = 0; i < c.acumulado.length; i++) {
+        if (c.acumulado[i] !== null) {
+          ultimo = c.acumulado[i];
+          idealNoPonto = c.ideal[i];
+        }
+      }
+      var adiantado = ultimo !== null && ultimo > idealNoPonto;
+      var cor = adiantado ? "#ef4444" : "#10b981";
+
+      _chartInstances["chart_queima"] = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels: c.dias,
+          datasets: [
+            {
+              label: "Gasto acumulado",
+              data: c.acumulado,
+              borderColor: cor,
+              backgroundColor: adiantado
+                ? "rgba(239, 68, 68, 0.12)"
+                : "rgba(16, 185, 129, 0.12)",
+              borderWidth: 2.5,
+              pointRadius: 0,
+              tension: 0.2,
+              fill: true,
+              // Sem isto o Chart.js liga o último ponto real ao próximo
+              // não-nulo e inventa futuro.
+              spanGaps: false,
+            },
+            {
+              label: "Ideal",
+              data: c.ideal,
+              borderColor: isDark ? "#6b7280" : "#9ca3af",
+              borderWidth: 1.5,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              fill: false,
+              tension: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: "index" },
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                color: textColor,
+                font: { size: 11, family: "Inter" },
+                padding: 10,
+                usePointStyle: true,
+              },
+            },
+            tooltip: {
+              callbacks: {
+                title: function (itens) {
+                  return "Dia " + itens[0].label;
+                },
+                label: function (ctx) {
+                  if (ctx.parsed.y === null) return null;
+                  return (
+                    ctx.dataset.label +
+                    ": " +
+                    ctx.parsed.y.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  );
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: textColor,
+                font: { size: 9 },
+                maxTicksLimit: 8,
+              },
+              grid: { display: false },
+            },
+            y: {
+              ticks: {
+                color: textColor,
+                font: { size: 9 },
+                callback: function (v) {
+                  if (Math.abs(v) >= 1000) return (v / 1000).toFixed(0) + "k";
+                  return v;
+                },
+              },
+              grid: { color: gridColor },
+              beginAtZero: true,
+            },
+          },
+          animation: { duration: 600 },
+        },
+      });
+    }
+
 
     // ========== SPARKLINE SVG NATIVO (zero custo de performance) ==========
     function gerarSparklineSVG(dados, cor) {
