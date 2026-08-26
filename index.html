@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-26T15:48:21.944Z   ·   Versão 4.1.0
+     Gerado em 2026-08-26T15:50:34.565Z   ·   Versão 4.1.0
      ============================================================ -->
 <!doctype html>
 <html>
@@ -3807,7 +3807,7 @@
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
     var VERSAO_PWA = "4.1.0";
-    var BUILD_PWA = "2026-08-26T15:48:21.944Z";
+    var BUILD_PWA = "2026-08-26T15:50:34.565Z";
 
     /**
      * ISO do build em algo que se lê de relance: "26/08/2026 14:56".
@@ -6247,7 +6247,10 @@
     // ╚══════════════════════════════════════════════════════════════╝
 
     var currentObStep = 0;
-    var totalObSteps = 6;
+    // Teto de 8 (14.3). Um tour de 12 ninguém termina, e quem pula perde
+    // tudo. Os passos são organizados pelas PERGUNTAS que o app responde,
+    // não pelas telas que ele tem.
+    var totalObSteps = 8;
     // Verdadeira só depois que o BACKEND confirmou a gravação. Marcar antes era
     // o segundo dos três defeitos da 14.2: uma falha de rede deixava o local
     // dizendo "concluído" e o remoto dizendo "pendente", e o bug voltava depois.
@@ -6383,7 +6386,7 @@
   <div id="onboarding-modal" class="onboarding-overlay">
     <div class="onboarding-card">
       <div class="onboarding-header">
-        <span class="onboarding-progress" id="ob-progress">1/6</span>
+        <span class="onboarding-progress" id="ob-progress">1/8</span>
         <button class="onboarding-close" onclick="fecharOnboarding(true)">
           ✕
         </button>
@@ -6392,66 +6395,104 @@
       <div id="ob-step-0" class="onboarding-step-view active">
         <div class="onboarding-icon">✨</div>
         <div class="onboarding-title">
-          Controle total,<br />em menos de 2 min/dia
+          Seu dinheiro,<br />na sua planilha
         </div>
         <div class="onboarding-text">
-          Bem-vindo ao Batuta. Aqui você registra
-          entradas, saídas e investimentos — tudo salvo direto na sua planilha
-          Google. Sem assinaturas, sem anúncios. Seu dinheiro, suas regras.
+          O Batuta é um app de verdade — mas o banco de dados é uma planilha
+          Google que é <strong>sua</strong>. Sem assinatura, sem anúncio, sem
+          ninguém olhando. Nas próximas telas: o que ele responde, e onde.
         </div>
       </div>
 
       <div id="ob-step-1" class="onboarding-step-view">
-        <div class="onboarding-icon">📊</div>
-        <div class="onboarding-title">Seu painel de controle</div>
+        <div class="onboarding-icon">➕</div>
+        <div class="onboarding-title">
+          Registrar é simples
+        </div>
         <div class="onboarding-text">
-          O <strong>Dashboard</strong> mostra seu saldo líquido do mês, quanto
-          você gastou por categoria e um gráfico de evolução dos últimos 6
-          meses. Tudo atualizado no momento que você lança.
+          Toque em <strong>NOVO</strong> na barra de baixo. Tipo, categoria, valor
+          — pronto. Compra parcelada? Marque <strong>"É parcelado?"</strong> e
+          as parcelas nascem todas de uma vez. Depois, apagar ou corrigir a
+          compra inteira é uma opção só.
         </div>
       </div>
 
       <div id="ob-step-2" class="onboarding-step-view">
-        <div class="onboarding-icon">➕</div>
-        <div class="onboarding-title">Registrar é simples</div>
+        <div class="onboarding-icon">📈</div>
+        <div class="onboarding-title">
+          Você está<br />melhorando?
+        </div>
         <div class="onboarding-text">
-          Toque em <strong>NOVO</strong> na barra inferior. Escolha o tipo
-          (Saída, Entrada, Aporte ou Resgate), a categoria e o valor. Compras
-          parceladas? Marque "É parcelado?" e lançamos todas as parcelas
-          automaticamente.
+          A <strong>taxa de poupança</strong> diz quanto sobra de cada R$ 100 que
+          entra, com a média dos últimos 3 meses ao lado. E o gráfico de
+          <strong>patrimônio</strong> mostra a sua linha subindo — ou não —
+          desde o primeiro lançamento.
         </div>
       </div>
 
       <div id="ob-step-3" class="onboarding-step-view">
-        <div class="onboarding-icon">🎯</div>
-        <div class="onboarding-title">Orçamentos que funcionam</div>
+        <div class="onboarding-icon">🛟</div>
+        <div class="onboarding-title">
+          Quanto tempo<br />você dura?
+        </div>
         <div class="onboarding-text">
-          Na aba <strong>Config</strong> você define um limite mensal por
-          categoria. Quando você se aproximar do limite, a barra fica amarela.
-          Se ultrapassar, fica vermelha — e você recebe um alerta por e-mail
-          na hora.
+          Se a renda parasse hoje, quantos meses o seu dinheiro aguenta? É o
+          <strong>runway</strong>. Ele conta só o que dá para sacar rápido: em
+          <strong>Config → Categorias</strong> você marca 🟢🟡🔴 o que é
+          líquido e o que não é.
         </div>
       </div>
 
       <div id="ob-step-4" class="onboarding-step-view">
-        <div class="onboarding-icon">💰</div>
-        <div class="onboarding-title">Invista com propósito</div>
+        <div class="onboarding-icon">🔮</div>
+        <div class="onboarding-title">
+          Vai fechar bem<br />este mês?
+        </div>
         <div class="onboarding-text">
-          A aba <strong>INVEST</strong> organiza seus aportes e resgates por
-          objetivo de vida: Reserva de Emergência, Viagem, Aposentadoria, o
-          que fizer sentido pra você. Acompanhe o crescimento da sua carteira
-          ao longo do tempo.
+          No dia 8 o app já projeta como o mês termina — pelo <strong>seu</strong>
+          perfil de gasto ao longo do mês, não por regra de três. E a
+          <strong>curva de queima</strong> mostra se você está acima ou abaixo
+          do ritmo que cabe no orçamento.
         </div>
       </div>
 
       <div id="ob-step-5" class="onboarding-step-view">
-        <div class="onboarding-icon">🤖</div>
-        <div class="onboarding-title">Seu contador pessoal por e-mail</div>
+        <div class="onboarding-icon">🎯</div>
+        <div class="onboarding-title">
+          Orçamentos que<br />avisam ANTES
+        </div>
         <div class="onboarding-text">
-          O <strong>Maestro</strong> envia resumos semanais, alertas de
-          orçamento e comemorações quando você bate metas. Configure seu
-          e-mail em <strong>Config → Abrir Maestro</strong> agora — é o
-          primeiro passo para nunca mais perder o controle.
+          Em <strong>Config</strong> você põe um limite por categoria. O aviso não
+          é "você estourou" — é <strong>"no ritmo atual você estoura no dia
+          24"</strong>. Dá tempo de fazer alguma coisa a respeito.
+        </div>
+      </div>
+
+      <div id="ob-step-6" class="onboarding-step-view">
+        <div class="onboarding-icon">🎼</div>
+        <div class="onboarding-title">
+          O Maestro escreve<br />para você
+        </div>
+        <div class="onboarding-text">
+          Quatro módulos, por e-mail: <strong>O Farol</strong> chama quando você
+          some, <strong>O Guarda</strong> cuida dos orçamentos, <strong>A
+          Festa</strong> comemora meta batida e <strong>O Estrategista</strong>
+          mostra quanto do mês já está comprometido com parcelas. Ligue em
+          <strong>Config → Abrir Maestro</strong>.
+        </div>
+      </div>
+
+      <div id="ob-step-7" class="onboarding-step-view">
+        <div class="onboarding-icon">🔎</div>
+        <div class="onboarding-title">
+          Dá para confiar<br />nos números?
+        </div>
+        <div class="onboarding-text">
+          O app avisa quando ele mesmo não tem base. O <strong>selo de
+          cobertura</strong> diz se o seu registro está em dia; o card
+          <strong>"fora do padrão"</strong> aponta a categoria que fugiu da sua
+          média; e a nota de <strong>mês atípico</strong> conta qual mês ficou
+          de fora da conta — férias e 13º distorcem tudo.
         </div>
       </div>
 
