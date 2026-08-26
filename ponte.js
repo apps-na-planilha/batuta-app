@@ -242,8 +242,9 @@
       '  <input id="bt-token" type="text" autocomplete="off" spellcheck="false"' +
       '         autocapitalize="off" placeholder="cole aqui o código">' +
       '  <button id="bt-conectar">Conectar</button>' +
-      '  <div class="aj">Para pegar o código: abra sua planilha, recarregue a página, e vá em' +
-      '     <b>💰 Gestão Financeira → ♻️ Gerar novo código de acesso</b>.</div>' +
+      '  <div class="aj">Os dois valores estão na sua planilha, juntos, em' +
+      '     <b>🎼 Batuta → 📲 Conectar o celular</b>.' +
+      '     Se o menu não aparecer, recarregue a planilha e espere alguns segundos.</div>' +
       '</div>';
 
     document.body.appendChild(el);
