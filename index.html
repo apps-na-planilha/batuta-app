@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-27T03:33:34.238Z   ·   Versão 4.1.4
+     Gerado em 2026-08-27T03:45:56.748Z   ·   Versão 4.1.5
      ============================================================ -->
 <!doctype html>
 <html>
@@ -3961,8 +3961,8 @@
     // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
-    var VERSAO_PWA = "4.1.4";
-    var BUILD_PWA = "2026-08-27T03:33:34.238Z";
+    var VERSAO_PWA = "4.1.5";
+    var BUILD_PWA = "2026-08-27T03:45:56.748Z";
 
     /**
      * Desliga este aparelho da planilha e volta para a tela de conexão.
@@ -4093,15 +4093,30 @@
     function renderizarOrcamentosConfig(orcamentos) {
       var container = document.getElementById("config-list");
       var btnSalvar = document.getElementById("btn-salvar-orcamentos");
+      // Sem NENHUMA linha: a aba Orçamentos está vazia de verdade. É estado
+      // raro — o instalador semeia as categorias — e a saída é pela planilha.
       if (!orcamentos || orcamentos.length === 0) {
         container.innerHTML =
-          '<div class="empty-state">Você ainda não definiu limites.<br>' +
-        "Escolha quanto quer gastar por categoria aqui embaixo — " +
-        'e O Guarda avisa <strong>antes</strong> de estourar.</div>';
+          '<div class="empty-state">Nenhuma categoria de despesa para orçar.' +
+          "<br>Na planilha: menu 🎼 Batuta → 🚀 Instalar Sistema.</div>";
         btnSalvar.style.display = "none";
         return;
       }
+
+      // Limite vazio é "não definido", e tem que PARECER não definido: um "0"
+      // no campo lê como "meu limite é zero", que é outra coisa. Ver 14.5.
+      var nenhumDefinido = orcamentos.every(function (o) {
+        return !(o.limite > 0);
+      });
+
       var html = "";
+      if (nenhumDefinido) {
+        html +=
+          '<div class="empty-state" style="padding:0 0 14px;text-align:left">' +
+          "Você ainda não definiu limites. Preencha só as categorias que " +
+          "importam — <strong>O Guarda avisa antes de estourar</strong>, e " +
+          "categoria em branco não gera aviso nenhum.</div>";
+      }
       orcamentos.forEach(function (o) {
         html += '<div class="config-item">';
         html += "  <label>" + o.categoria + "</label>";
@@ -4109,8 +4124,8 @@
           '  <input type="number" data-cat="' +
           o.categoria +
           '" class="orc-input" value="' +
-          o.limite +
-          '" step="50" min="0">';
+          (o.limite > 0 ? o.limite : "") +
+          '" placeholder="sem limite" step="50" min="0">';
         html += "</div>";
       });
       container.innerHTML = html;
