@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-27T03:45:56.748Z   ·   Versão 4.1.5
+     Gerado em 2026-08-27T04:01:00.179Z   ·   Versão 4.1.6
      ============================================================ -->
 <!doctype html>
 <html>
@@ -2819,27 +2819,20 @@
     // O tour de boas-vindas é decidido AQUI, no boot, e em lugar nenhum mais.
     carregarDashboard(avaliarTourNoBoot);
 
-    // Prefetch: busca dados do backend em paralelo ao carregamento do Charts
-    // para que quando o callback acima rodar, os dados possam já estar prontos
-    var _prefetchedData = null;
-    var _prefetchDone = false;
-    (function () {
-      var agora2 = new Date();
-      var mesAtualPrefetch =
-        ("0" + (agora2.getMonth() + 1)).slice(-2) + "/" + agora2.getFullYear();
-      google.script.run
-        .withSuccessHandler(function (dados) {
-          _prefetchedData = dados;
-          _prefetchDone = true;
-        })
-        .withFailureHandler(function (err) {
-          // Silencioso de propósito: é uma corrida de otimização, e a carga
-          // de verdade em carregarDashboard() tem a própria tela de erro.
-          // Avisar duas vezes o mesmo problema é pior do que não avisar.
-          console.error("prefetch do dashboard: " + err);
-        })
-        .getDadosDashboard(mesAtualPrefetch);
-    })();
+    // O PREFETCH FOI REMOVIDO na 14.5.5, e não por ser código morto.
+    //
+    // Ele buscava o mês corrente em paralelo, e carregarDashboard() só o
+    // consumia quando `filtro === "TODOS"`. Duas coisas se somavam:
+    //
+    //   1. A chamada do boot roda ANTES de `_prefetchDone` existir (var
+    //      içada vale undefined), então o primeiro render nunca o usava —
+    //      ou seja, a otimização custava uma requisição e não economizava
+    //      nenhuma.
+    //   2. Quando o usuário depois escolhia "TODOS" no seletor, a condição
+    //      finalmente casava e a visão global era desenhada com os dados do
+    //      MÊS CORRENTE. Uma vez, em silêncio.
+    //
+    // O backend já cacheia o dashboard por 60s; não há o que otimizar aqui.
 
     // --- ESTADOS GLOBAIS ---
     /** Some com o bloco de parcela e desmarca a propagação para o grupo. */
@@ -3206,14 +3199,6 @@
       document.getElementById("welcome-screen").style.display = "none"; // Hide welcome screen also
       var filtro = document.getElementById("mesFilter").value;
 
-      // Se temos dados prefetched (primeiro load), usa direto sem chamar o server de novo
-      if (_prefetchDone && filtro === "TODOS") {
-        _prefetchDone = false; // Usa apenas uma vez
-        renderizarDash(_prefetchedData);
-        if (typeof aoCarregar === "function") aoCarregar(_prefetchedData);
-        return;
-      }
-
       google.script.run
         .withSuccessHandler(function (dados) {
           renderizarDash(dados);
@@ -3240,22 +3225,31 @@
       // Esta função roda a cada troca de mês (e em mais cinco lugares); abrir o
       // tour é evento de boot. A guarda aqui reabria o tour a cada troca.
 
-      var filtroAtivo = document.getElementById("mesFilter").value;
-      var estaVazio =
-        !dados ||
-        (dados.saldo === 0 &&
-          dados.entradas === 0 &&
-          dados.saidas === 0 &&
-          dados.investido === 0);
-
-      if (estaVazio && filtroAtivo === "TODOS") {
-        // Planilha completamente vazia — mostra welcome screen
+      // ── PLANILHA INTEIRA VAZIA ──
+      //
+      // getDadosDashboard devolve null nesse caso, e SÓ nesse: mês filtrado
+      // sem dados devolve objeto com zeros. É o sinal certo.
+      //
+      // A guarda antiga era `estaVazio && filtroAtivo === "TODOS"` — e o
+      // filtro nasce no mês corrente desde que isso virou o padrão de UX.
+      // A tela de boas-vindas ficou inalcançável naquele dia, sem ninguém
+      // notar: quem instalava caía direto num dashboard de zeros.
+      if (!dados) {
         document.querySelector("#view-dash > .header-row").style.display =
           "none";
         document.getElementById("dash-content").style.display = "none";
         document.getElementById("welcome-screen").style.display = "flex";
         return;
-      } else if (estaVazio) {
+      }
+
+      var filtroAtivo = document.getElementById("mesFilter").value;
+      var estaVazio =
+        dados.saldo === 0 &&
+        dados.entradas === 0 &&
+        dados.saidas === 0 &&
+        dados.investido === 0;
+
+      if (estaVazio) {
         // Mês filtrado sem dados — mostra dashboard com empty state contextual
         document.querySelector("#view-dash > .header-row").style.display = "";
         document.getElementById("welcome-screen").style.display = "none";
@@ -3961,8 +3955,8 @@
     // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
-    var VERSAO_PWA = "4.1.5";
-    var BUILD_PWA = "2026-08-27T03:45:56.748Z";
+    var VERSAO_PWA = "4.1.6";
+    var BUILD_PWA = "2026-08-27T04:01:00.179Z";
 
     /**
      * Desliga este aparelho da planilha e volta para a tela de conexão.
