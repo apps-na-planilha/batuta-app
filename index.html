@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-26T16:00:31.338Z   ·   Versão 4.1.0
+     Gerado em 2026-08-27T01:52:09.745Z   ·   Versão 4.1.1
      ============================================================ -->
 <!doctype html>
 <html>
@@ -40,6 +40,10 @@
       --toast-success: #10b981;
       --toast-error: #ef4444;
       --toast-info: #3b82f6;
+      /* Superfície de trilho/chip: um degrau acima do card, não do fundo.
+         Era usada em .meta-bar-bg, .cat-chip e .obj-share-bar sem nunca ter
+         sido definida — as três renderizavam transparentes. */
+      --card-accent: #eef0f3;
     }
 
     /* Dark Mode Override */
@@ -61,6 +65,7 @@
       /* Darker green for contrast on light toast text if needed, or keeping standardized */
       --toast-error: #dc2626;
       --toast-info: #2563eb;
+      --card-accent: #374151;
     }
 
     body {
@@ -170,6 +175,12 @@
       padding: 16px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       border: 1px solid var(--border);
+    }
+
+    /* Largura cheia sem virar manchete: o .card.full também pinta o gradiente
+       azul, que só o Saldo Líquido deve ter. */
+    .card.wide {
+      grid-column: span 2;
     }
 
     .card.full {
@@ -489,6 +500,13 @@
       height: 220px;
     }
 
+    /* Sem dados, os 220px viravam uma caixa em branco. Com dois gráficos
+       vazios, metade da primeira tela de um usuário novo era vazio. A altura
+       fixa existe para o Chart.js medir o canvas; sem canvas ela não serve. */
+    .chart_div.vazio {
+      height: auto;
+    }
+
     /* LISTA DE TRANSAÇÕES */
     .tx-list {
       margin-top: 10px;
@@ -716,7 +734,7 @@
 
     .budget-item {
       padding: 12px 0;
-      border-bottom: 1px solid var(--card-border);
+      border-bottom: 1px solid var(--border);
     }
 
     .budget-item:last-child {
@@ -747,7 +765,7 @@
 
     .budget-bar-bg {
       height: 8px;
-      background: var(--card-border);
+      background: var(--border);
       border-radius: 4px;
       overflow: hidden;
     }
@@ -801,7 +819,7 @@
       align-items: center;
       justify-content: space-between;
       background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 12px 16px;
     }
@@ -817,7 +835,7 @@
       width: 90px;
       padding: 6px 10px;
       border-radius: 8px;
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       background: var(--bg);
       color: var(--text-main);
       font-size: 14px;
@@ -1037,7 +1055,7 @@
       width: 100%;
       padding: 10px 14px;
       border-radius: 10px;
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       background: var(--card-bg);
       color: var(--text-main);
       font-size: 13px;
@@ -1060,7 +1078,7 @@
       flex: 1;
       padding: 8px 10px;
       border-radius: 8px;
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       background: var(--card-bg);
       color: var(--text-main);
       font-size: 12px;
@@ -1072,7 +1090,7 @@
       width: 100%;
       padding: 10px;
       margin-top: 8px;
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       border-radius: 10px;
       background: var(--card-bg);
       color: var(--primary);
@@ -1142,7 +1160,7 @@
     }
 
     .delta-badge.neutral {
-      background: var(--card-border);
+      background: var(--border);
       color: var(--text-sec);
     }
 
@@ -1151,7 +1169,7 @@
       background: linear-gradient(135deg,
           var(--card-bg),
           rgba(37, 99, 235, 0.05));
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       border-radius: 16px;
       padding: 16px;
       margin-bottom: 12px;
@@ -1363,13 +1381,13 @@
     .confirm-box .confirm-title {
       font-size: 16px;
       font-weight: 700;
-      color: var(--text, #f1f5f9);
+      color: var(--text-main);
       margin-bottom: 6px;
     }
 
     .confirm-box .confirm-msg {
       font-size: 13px;
-      color: var(--text-secondary, #94a3b8);
+      color: var(--text-sec);
       margin-bottom: 22px;
       line-height: 1.4;
     }
@@ -1412,7 +1430,7 @@
 
     .confirm-box .btn-cancel {
       background: rgba(255, 255, 255, 0.08);
-      color: var(--text-secondary, #94a3b8);
+      color: var(--text-sec);
     }
 
     .confirm-box .btn-cancel:hover {
@@ -1766,7 +1784,7 @@
 
     .invest-kpi {
       background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 12px 10px;
       text-align: center;
@@ -1788,7 +1806,7 @@
     .obj-card {
       position: relative;
       background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       border-left: 3px solid var(--primary);
       border-radius: 12px;
       padding: 14px 16px 10px;
@@ -1871,7 +1889,7 @@
 
     .obj-details {
       margin-top: 10px;
-      border-top: 1px solid var(--card-border);
+      border-top: 1px solid var(--border);
       padding-top: 10px;
       display: none;
       position: relative;
@@ -2039,6 +2057,14 @@
           <div class="sparkline-wrap" id="spark-saldo"></div>
         </div>
         <div class="card" style="position: relative; overflow: hidden">
+          <h3 style="color: var(--success)">ENTRADAS</h3>
+          <div class="val" id="val-entradas" style="color: var(--success)" data-val="0">
+            ----
+          </div>
+          <span id="delta-entradas" class="delta-badge" style="display: none"></span>
+          <div class="sparkline-wrap" id="spark-entradas"></div>
+        </div>
+        <div class="card" style="position: relative; overflow: hidden">
           <h3 style="color: var(--danger)">SAÍDAS</h3>
           <div class="val" id="val-saidas" style="color: var(--danger)" data-val="0">
             ----
@@ -2046,7 +2072,7 @@
           <span id="delta-saidas" class="delta-badge" style="display: none"></span>
           <div class="sparkline-wrap" id="spark-saidas"></div>
         </div>
-        <div class="card" style="position: relative; overflow: hidden">
+        <div class="card wide" style="position: relative; overflow: hidden">
           <h3 style="color: var(--success)">INVESTIDO</h3>
           <div class="val" id="val-invest" style="color: var(--success)" data-val="0">
             ----
@@ -2337,7 +2363,7 @@
     </button>
     <div style="
           font-size: 12px;
-          color: var(--text-muted);
+          color: var(--text-sec);
           margin-top: 8px;
           line-height: 1.4;
         ">
@@ -2368,6 +2394,29 @@
       🗺️ Ver onboarding novamente
     </button>
 
+    <!-- Trocar de planilha (14.5). window.batutaDesconectar() existia na
+         ponte desde a SPEC-002, com o comentário "Exposto para a tela de
+         Configurações poder desconectar" — e nenhuma tela chamava. Sem isto
+         não há caminho pela interface para trocar de planilha nem para
+         corrigir um código colado errado: só apagando os dados do site. -->
+    <div id="bloco-conexao" style="display: none">
+      <p style="
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 20px 0 8px;
+          ">
+        📲 Conexão
+      </p>
+      <button class="cat-open-btn" onclick="desconectarApp()">
+        🔌 Desconectar desta planilha
+      </button>
+      <p style="font-size: 12px; color: var(--text-sec); margin: 6px 0 0">
+        Pede o endereço e o código de novo. Os seus lançamentos ficam na
+        planilha — nada é apagado aqui.
+      </p>
+    </div>
+
     <!-- Indicador de versão (14.4) — atrás do modo desenvolvedor. Mostra os
          DOIS lados porque o que morde é o deploy pela metade: publicar a PWA
          sem implantar o script, ou o contrário. -->
@@ -2377,9 +2426,9 @@
           padding: 14px;
           border: 1px dashed var(--border);
           border-radius: 12px;
-          background: var(--card);
+          background: var(--card-bg);
           font-size: 12px;
-          color: var(--text-muted);
+          color: var(--text-sec);
           line-height: 1.5;
         ">
       <div style="font-weight: 700; margin-bottom: 8px">🧪 Versão</div>
@@ -2394,7 +2443,7 @@
       <div id="versao-divergencia" style="
             display: none;
             margin-top: 8px;
-            color: var(--warning, #f59e0b);
+            color: var(--warn);
             font-weight: 600;
           ">
         ⚠️ Deploy pela metade: as duas pontas estão em versões diferentes.
@@ -2437,11 +2486,11 @@
         <div class="maestro-toggle-grid">
           <label class="maestro-toggle">
             <input type="checkbox" id="maestro-farol" />
-            <span>🔦 O Farol (inatividade &gt; 3 dias)</span>
+            <span>🔦 O Farol (chama quando você some)</span>
           </label>
           <label class="maestro-toggle">
             <input type="checkbox" id="maestro-guarda" />
-            <span>👮 O Guarda (orçamento estourado)</span>
+            <span>👮 O Guarda (avisa antes de estourar)</span>
           </label>
           <label class="maestro-toggle">
             <input type="checkbox" id="maestro-festa" />
@@ -2463,7 +2512,7 @@
 
         <div style="
               margin-bottom: 20px;
-              border-top: 1px solid var(--border-color);
+              border-top: 1px solid var(--border);
               padding-top: 15px;
             ">
           <label class="form-check-label" style="font-weight: 600; margin-bottom: 8px; display: block">
@@ -2480,14 +2529,14 @@
               padding: 12px;
               border: 1px solid var(--border);
               border-radius: 12px;
-              background: var(--card);
+              background: var(--card-bg);
             ">
           <div style="font-weight: 800; font-size: 12px; margin-bottom: 6px">
             📍 Status do Maestro
           </div>
           <div style="
                 font-size: 12px;
-                color: var(--text-muted);
+                color: var(--text-sec);
                 line-height: 1.4;
               ">
             <div>
@@ -2522,13 +2571,13 @@
                 padding: 14px;
                 border: 1px dashed var(--border);
                 border-radius: 12px;
-                background: var(--card);
+                background: var(--card-bg);
               ">
             <div style="
                   font-weight: 700;
                   font-size: 12px;
                   margin-bottom: 10px;
-                  color: var(--text-muted);
+                  color: var(--text-sec);
                 ">
               🧪 Testar Emails (disparo individual)
             </div>
@@ -2555,7 +2604,7 @@
             <div style="
                   margin-top: 8px;
                   font-size: 11px;
-                  color: var(--text-muted);
+                  color: var(--text-sec);
                 ">
               Envia email de teste ignorando snooze, idempotência e dia da
               semana.
@@ -2586,7 +2635,7 @@
       <div id="edit-warning-parcela" style="
             display: none;
             background: rgba(245, 158, 11, 0.1);
-            border: 1px solid var(--warning, #f59e0b);
+            border: 1px solid var(--warn);
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 16px;
@@ -2679,7 +2728,7 @@
               <input type="date" id="dataPrimeiraParcela" class="form-control" style="margin-top: 5px" required />
             </div>
           </div>
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px">
+          <div style="font-size: 11px; color: var(--text-sec); margin-top: 8px">
             O valor será dividido igualitariamente a partir do mês selecionado
             acima.
           </div>
@@ -2755,6 +2804,12 @@
         .withSuccessHandler(function (dados) {
           _prefetchedData = dados;
           _prefetchDone = true;
+        })
+        .withFailureHandler(function (err) {
+          // Silencioso de propósito: é uma corrida de otimização, e a carga
+          // de verdade em carregarDashboard() tem a própria tela de erro.
+          // Avisar duas vezes o mesmo problema é pior do que não avisar.
+          console.error("prefetch do dashboard: " + err);
         })
         .getDadosDashboard(mesAtualPrefetch);
     })();
@@ -2834,6 +2889,7 @@
             atualizarCategorias();
           }
         })
+        .withFailureHandler(aoFalhar("carregar as categorias"))
         .getCategorias();
     })();
     var dadosGlobais = null;
@@ -2858,6 +2914,7 @@
 
       // Atualiza Cards KPIs
       atualizarValorNaTela("val-saldo");
+      atualizarValorNaTela("val-entradas");
       atualizarValorNaTela("val-saidas");
       atualizarValorNaTela("val-invest");
 
@@ -2941,6 +2998,31 @@
     // --- HAPTIC FEEDBACK ---
     function vibrar(ms) {
       if (navigator.vibrate) navigator.vibrate(ms || 30);
+    }
+
+    /**
+     * Handler de falha padrão para as chamadas ao backend — 14.5.
+     *
+     * Sem isto a chamada falha em SILÊNCIO: a tela fica travada no estado de
+     * "salvando", o botão não volta, e a pessoa não sabe se deu certo nem
+     * consegue tentar de novo sem fechar o app. Era o caso do salvarTransacao,
+     * a ação central do produto, numa oscilação de 4G.
+     *
+     * @param {string} oQue - o que falhou, na voz do usuário ("salvar o lançamento")
+     * @param {Function} [restaurar] - devolve a tela ao estado de antes
+     * @return {Function} handler para withFailureHandler
+     */
+    function aoFalhar(oQue, restaurar) {
+      return function (err) {
+        if (typeof restaurar === "function") {
+          try {
+            restaurar();
+          } catch (e) {}
+        }
+        showToast("❌ Não foi possível " + oQue + ". Tente de novo.", "error");
+        vibrar(100);
+        console.error(oQue + ": " + (err && err.message ? err.message : err));
+      };
     }
 
     function showToast(mensagem, tipo) {
@@ -3231,6 +3313,9 @@
         .getElementById("val-saldo")
         .setAttribute("data-val", dados.saldo);
       document
+        .getElementById("val-entradas")
+        .setAttribute("data-val", dados.entradas);
+      document
         .getElementById("val-saidas")
         .setAttribute("data-val", dados.saidas);
       document
@@ -3239,6 +3324,7 @@
 
       // Aplica estado atual do olho
       atualizarValorNaTela("val-saldo");
+      atualizarValorNaTela("val-entradas");
       atualizarValorNaTela("val-saidas");
       atualizarValorNaTela("val-invest");
 
@@ -3363,6 +3449,11 @@
           dados.saidasDiarias30d,
           "#ef4444",
         );
+      if (dados.entradasDiarias30d)
+        document.getElementById("spark-entradas").innerHTML = gerarSparklineSVG(
+          dados.entradasDiarias30d,
+          "#10b981",
+        );
       if (dados.investAcum30d)
         document.getElementById("spark-invest").innerHTML = gerarSparklineSVG(
           dados.investAcum30d,
@@ -3372,6 +3463,19 @@
       // 6. Delta badges (comparativo mês atual vs anterior)
       // Badges só fazem sentido no filtro de mês específico — não em Global
       var filtroEhMes = filtroAtivo !== "TODOS";
+      var badgeEntradas = document.getElementById("delta-entradas");
+      // Entradas: subir é bom, cair é ruim — o inverso das saídas.
+      if (filtroEhMes && dados.deltaEntradas !== null && dados.deltaEntradas !== undefined) {
+        var dent = dados.deltaEntradas;
+        var classEnt = dent > 0 ? "up-good" : dent < 0 ? "down-bad" : "neutral";
+        var setaEnt = dent > 0 ? "\u2191" : dent < 0 ? "\u2193" : "\u2194";
+        badgeEntradas.className = "delta-badge " + classEnt;
+        badgeEntradas.innerText =
+          setaEnt + " " + Math.abs(dent) + "% vs m\u00eas ant.";
+        badgeEntradas.style.display = "inline-block";
+      } else {
+        badgeEntradas.style.display = "none";
+      }
       var badgeSaidas = document.getElementById("delta-saidas");
       var badgeInvest = document.getElementById("delta-invest");
       if (filtroEhMes && dados.deltaSaidas !== null && dados.deltaSaidas !== undefined) {
@@ -3599,8 +3703,7 @@
             (privacyMode ? "privacy-mask" : "") +
             '">' +
             t.data +
-            " \u2022 " +
-            escapeHtml(t.desc || "") +
+            (t.desc ? " \u2022 " + escapeHtml(t.desc) : "") +
             "</span>";
           htmlLista += "  </div>";
           htmlLista +=
@@ -3806,8 +3909,27 @@
     // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
-    var VERSAO_PWA = "4.1.0";
-    var BUILD_PWA = "2026-08-26T16:00:31.338Z";
+    var VERSAO_PWA = "4.1.1";
+    var BUILD_PWA = "2026-08-27T01:52:09.745Z";
+
+    /**
+     * Desliga este aparelho da planilha e volta para a tela de conexão.
+     *
+     * Só existe na PWA: dentro do Apps Script não há ponte, e o app já sabe
+     * de qual planilha ele é. Por isso o bloco nasce escondido e só aparece
+     * quando batutaDesconectar existe.
+     */
+    function desconectarApp() {
+      if (typeof window.batutaDesconectar !== "function") return;
+      customConfirm(
+        "🔌",
+        "Desconectar deste aparelho?",
+        "Você vai precisar do endereço e do código de acesso para entrar de novo. Nenhum lançamento é apagado.",
+        "Desconectar",
+      ).then(function (ok) {
+        if (ok) window.batutaDesconectar();
+      });
+    }
 
     /**
      * ISO do build em algo que se lê de relance: "26/08/2026 14:56".
@@ -3842,6 +3964,14 @@
      *
      * @param {string} versaoApi - VERSAO_APP do código implantado
      */
+    /** O bloco de conexão só faz sentido onde existe ponte — ou seja, na PWA. */
+    function renderizarConexao() {
+      var bloco = document.getElementById("bloco-conexao");
+      if (!bloco) return;
+      bloco.style.display =
+        typeof window.batutaDesconectar === "function" ? "" : "none";
+    }
+
     function renderizarVersao(versaoApi) {
       var painel = document.getElementById("painel-versao");
       if (!painel) return;
@@ -3878,6 +4008,7 @@
           _configCache = data;
           _modoDev = data.modoDev === true;
           renderizarVersao(data.versaoApi);
+          renderizarConexao();
 
           if (data.categorias) {
             cats = data.categorias;
@@ -3912,7 +4043,9 @@
       var btnSalvar = document.getElementById("btn-salvar-orcamentos");
       if (!orcamentos || orcamentos.length === 0) {
         container.innerHTML =
-          '<div class="empty-state">Nenhum orçamento cadastrado.<br>Execute instalarAbaOrcamentos() no editor.</div>';
+          '<div class="empty-state">Você ainda não definiu limites.<br>' +
+        "Escolha quanto quer gastar por categoria aqui embaixo — " +
+        'e O Guarda avisa <strong>antes</strong> de estourar.</div>';
         btnSalvar.style.display = "none";
         return;
       }
@@ -3952,6 +4085,12 @@
           btn.disabled = false;
           showToast(res.msg);
         })
+        .withFailureHandler(
+          aoFalhar("salvar os limites", function () {
+            btn.innerText = "💾 Salvar Todos os Limites";
+            btn.disabled = false;
+          }),
+        )
         .salvarTodosOrcamentos(lista);
     }
 
@@ -3968,6 +4107,7 @@
         .withSuccessHandler(function (res) {
           showToast(res.msg);
         })
+        .withFailureHandler(aoFalhar("salvar a meta"))
         .salvarMetaEconomia(Number(val));
     }
 
@@ -4201,6 +4341,7 @@
                 );
               }
             })
+            .withFailureHandler(aoFalhar("recarregar o Maestro"))
             .getConfigData();
         })
         .withFailureHandler(function (err) {
@@ -4245,6 +4386,7 @@
                 );
               }
             })
+            .withFailureHandler(aoFalhar("recarregar o Maestro"))
             .getConfigData();
         })
         .withFailureHandler(function (err) {
@@ -4357,7 +4499,9 @@
               "#f59e0b",
             ]);
           } else {
-            document.getElementById("chart_invest_detail").innerHTML =
+            var elVazio = document.getElementById("chart_invest_detail");
+            elVazio.classList.add("vazio");
+            elVazio.innerHTML =
               '<div class="empty-state">Sem dados para exibir.</div>';
           }
 
@@ -4466,8 +4610,9 @@
                   "  <span>" +
                   tipoEmoji + " " +
                   h.data +
-                  " \u2022 " +
-                  escapeHtml(h.desc || h.tipo) +
+                  (h.desc || h.tipo
+                    ? " \u2022 " + escapeHtml(h.desc || h.tipo)
+                    : "") +
                   "</span>";
                 htmlObj +=
                   '  <span class="hist-val invest-money-val ' +
@@ -4523,6 +4668,7 @@
           }
           renderCatManager();
         })
+        .withFailureHandler(aoFalhar("carregar as categorias"))
         .getConfigData();
       // Desenha já com o que estiver em memória, para o modal não abrir vazio.
       renderCatManager();
@@ -4770,6 +4916,7 @@
               atualizarCategorias();
               renderCatManager();
             })
+            .withFailureHandler(aoFalhar("carregar as categorias"))
             .getCategorias();
         }
       };
@@ -4781,12 +4928,15 @@
             // Após adicionar ao Resgate, adiciona ao Aporte e exibe toast
             google.script.run
               .withSuccessHandler(_finalizarAdicao)
+              .withFailureHandler(aoFalhar("adicionar a categoria"))
               .adicionarCategoria(_catTipoAtivo, nome);
           })
+          .withFailureHandler(aoFalhar("adicionar a categoria"))
           .adicionarCategoria(tipoEspelho, nome);
       } else {
         google.script.run
           .withSuccessHandler(_finalizarAdicao)
+          .withFailureHandler(aoFalhar("adicionar a categoria"))
           .adicionarCategoria(_catTipoAtivo, nome);
       }
     }
@@ -4820,6 +4970,7 @@
                 atualizarCategorias();
                 renderCatManager();
               })
+              .withFailureHandler(aoFalhar("carregar as categorias"))
               .getCategorias();
           } else if (btnEl) {
             btnEl.innerText = "Remover";
@@ -4834,12 +4985,15 @@
             .withSuccessHandler(function () {
               google.script.run
                 .withSuccessHandler(_finalizarRemocao)
+                .withFailureHandler(aoFalhar("remover a categoria"))
                 .removerCategoria(tipo, nome);
             })
+            .withFailureHandler(aoFalhar("remover a categoria"))
             .removerCategoria(tipoEspelho, nome);
         } else {
           google.script.run
             .withSuccessHandler(_finalizarRemocao)
+            .withFailureHandler(aoFalhar("remover a categoria"))
             .removerCategoria(tipo, nome);
         }
       });
@@ -4856,11 +5010,14 @@
     function _getOrCreateCanvas(elemId) {
       var container = document.getElementById(elemId);
       if (!container) return null;
-      // Se já é um canvas, usa direto
-      if (container.tagName === "CANVAS") return canvas;
+      // Se já é um canvas, usa direto. (Era "return canvas" — a variável só
+      // é declarada abaixo, então devolvia undefined e o gráfico não
+      // desenhava, em silêncio.)
+      if (container.tagName === "CANVAS") return container;
       // Se é div, procura ou cria canvas dentro
       var canvas = container.querySelector("canvas");
       if (!canvas) {
+        container.classList.remove("vazio"); // vai ter gráfico: devolve a altura
         container.innerHTML = "";
         canvas = document.createElement("canvas");
         canvas.style.width = "100%";
@@ -4897,9 +5054,11 @@
       // dadosArray vem no formato Google Charts: [["Categoria","Valor"], ["X", 100], ...]
       if (!dadosArray || dadosArray.length <= 1) {
         var p = canvas.parentElement || canvas;
-        if (p.tagName !== "CANVAS")
+        if (p.tagName !== "CANVAS") {
+          p.classList.add("vazio");
           p.innerHTML =
             "<div class='empty-state'>Sem dados para exibir.</div>";
+        }
         return;
       }
       var labels = [];
@@ -6069,6 +6228,12 @@
             btn.innerText = originalText; // Restaura texto se falhar (pode ser ATUALIZAR)
           }
         })
+        .withFailureHandler(
+          aoFalhar("salvar o lançamento", function () {
+            btn.innerText = originalText;
+            btn.disabled = false;
+          }),
+        )
         .salvarTransacao(formObj);
     }
 
@@ -6108,6 +6273,11 @@
             showToast(res.msg, res.success ? "success" : "error");
             carregarDashboard();
           })
+          .withFailureHandler(
+            aoFalhar("excluir", function () {
+              document.getElementById("loading").style.display = "none";
+            }),
+          )
           .excluirTransacaoPorId(alvo.id, escolha === "extra" ? "grupo" : "");
       });
     }
