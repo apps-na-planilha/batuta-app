@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-27T17:28:35.714Z   ·   Versão 4.4.1
+     Gerado em 2026-08-27T19:36:35.864Z   ·   Versão 4.4.2
      ============================================================ -->
 <!doctype html>
 <html>
@@ -2752,6 +2752,32 @@
             Aplicar categoria e descrição a todas as parcelas
           </span>
         </label>
+
+        <!-- Reagendar é uma escolha SEPARADA da de categoria/descrição, e
+             não um detalhe da mesma caixa: as duas propagam para conjuntos
+             diferentes. Categoria e descrição valem para a compra inteira,
+             inclusive as parcelas já vencidas. Data só faz sentido daqui
+             para frente — reescrever o vencimento do que já passou seria
+             reescrever o passado. -->
+        <label id="edit-parcela-datas-linha" style="
+              display: none;
+              align-items: flex-start;
+              gap: 8px;
+              margin-top: 10px;
+              cursor: pointer;
+            ">
+          <input type="checkbox" id="edit-parcela-datas" style="
+                width: 18px;
+                min-width: 18px;
+                height: 18px;
+                margin: 1px 0 0;
+                box-sizing: border-box;
+                flex-shrink: 0;
+              " />
+          <span id="edit-parcela-datas-label">
+            Reagendar as parcelas seguintes a partir desta data
+          </span>
+        </label>
       </div>
 
       <div class="form-group">
@@ -2923,6 +2949,10 @@
       if (linhaTodas) linhaTodas.style.display = "none";
       var caixaTodas = document.getElementById("edit-parcela-todas");
       if (caixaTodas) caixaTodas.checked = false;
+      var linhaDatas = document.getElementById("edit-parcela-datas-linha");
+      if (linhaDatas) linhaDatas.style.display = "none";
+      var caixaDatas = document.getElementById("edit-parcela-datas");
+      if (caixaDatas) caixaDatas.checked = false;
     }
 
     function resetFormToNew() {
@@ -3995,13 +4025,21 @@
       var textoEl = document.getElementById("edit-parcela-texto");
       var linhaTodas = document.getElementById("edit-parcela-todas-linha");
       var caixaTodas = document.getElementById("edit-parcela-todas");
+      var linhaDatas = document.getElementById("edit-parcela-datas-linha");
+      var caixaDatas = document.getElementById("edit-parcela-datas");
+
+      // Quantas vêm DEPOIS desta. Na última não há o que reagendar, e
+      // oferecer a caixa ali seria oferecer uma ação sem efeito.
+      var seguintes = nParcelas > 1 ? nParcelas - (t.parcela || 1) : 0;
 
       if (caixaTodas) caixaTodas.checked = false;
+      if (caixaDatas) caixaDatas.checked = false;
       if (warnEl) {
         warnEl.style.display =
           nParcelas > 1 || parcelaAntiga ? "block" : "none";
       }
       if (linhaTodas) linhaTodas.style.display = nParcelas > 1 ? "flex" : "none";
+      if (linhaDatas) linhaDatas.style.display = seguintes > 0 ? "flex" : "none";
       if (textoEl) {
         textoEl.innerHTML =
           nParcelas > 1
@@ -4009,12 +4047,18 @@
               t.parcela +
               " de " +
               nParcelas +
-              ".</strong> Valor e data mudam só nesta."
+              ".</strong> Por padrão, a mudança vale só para esta."
             : AVISO_PARCELA_SOLTA;
       }
       if (caixaTodas && nParcelas > 1) {
         document.getElementById("edit-parcela-todas-label").textContent =
           "Aplicar categoria e descrição às " + nParcelas + " parcelas";
+      }
+      if (caixaDatas && seguintes > 0) {
+        document.getElementById("edit-parcela-datas-label").textContent =
+          seguintes > 1
+            ? "Reagendar as " + seguintes + " parcelas seguintes a partir desta data"
+            : "Reagendar a parcela seguinte a partir desta data";
       }
 
       // Preenche campos
@@ -4054,8 +4098,8 @@
     // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
-    var VERSAO_PWA = "4.4.1";
-    var BUILD_PWA = "2026-08-27T17:28:35.714Z";
+    var VERSAO_PWA = "4.4.2";
+    var BUILD_PWA = "2026-08-27T19:36:35.864Z";
 
     /**
      * Desliga este aparelho da planilha e volta para a tela de conexão.
@@ -6392,6 +6436,11 @@
         escopoEdicao: (document.getElementById("edit-parcela-todas") || {})
           .checked
           ? "grupo"
+          : "",
+        // Reagenda as parcelas POSTERIORES a partir da data corrigida.
+        escopoData: (document.getElementById("edit-parcela-datas") || {})
+          .checked
+          ? "seguintes"
           : "",
       };
 
