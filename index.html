@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-27T03:13:24.285Z   ·   Versão 4.1.2
+     Gerado em 2026-08-27T03:19:30.810Z   ·   Versão 4.1.3
      ============================================================ -->
 <!doctype html>
 <html>
@@ -1127,6 +1127,33 @@
       padding: 30px;
       font-size: 13px;
       font-style: italic;
+    }
+
+    /* Uma categoria só: o número é a informação, não o anel. */
+    .grafico-unico {
+      text-align: center;
+      padding: 26px 16px;
+    }
+
+    .grafico-unico .gu-cat {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-sec);
+      margin-bottom: 6px;
+    }
+
+    .grafico-unico .gu-val {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .grafico-unico .gu-pct {
+      font-size: 12px;
+      color: var(--text-sec);
     }
 
     /* DELTA BADGES */
@@ -3909,8 +3936,8 @@
     // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
-    var VERSAO_PWA = "4.1.2";
-    var BUILD_PWA = "2026-08-27T03:13:24.285Z";
+    var VERSAO_PWA = "4.1.3";
+    var BUILD_PWA = "2026-08-27T03:19:30.810Z";
 
     /**
      * Desliga este aparelho da planilha e volta para a tela de conexão.
@@ -5070,6 +5097,29 @@
       // Destroy previous chart if exists
       if (_chartInstances[elemId]) {
         _chartInstances[elemId].destroy();
+      }
+
+      // Rosquinha de UMA fatia é um anel decorativo: não compara nada, e a
+      // legenda já diz o nome. Com uma categoria só o número é a informação.
+      // É o que o usuário novo vê na primeira semana — depois some sozinho,
+      // quando a segunda categoria aparece.
+      if (labels.length === 1) {
+        delete _chartInstances[elemId];
+        var pUnico = canvas.parentElement || canvas;
+        if (pUnico.tagName !== "CANVAS") {
+          pUnico.classList.add("vazio");
+          pUnico.innerHTML =
+            '<div class="grafico-unico">' +
+            '<div class="gu-cat">' +
+            escapeHtml(String(labels[0])) +
+            "</div>" +
+            '<div class="gu-val">' +
+            (privacyMode ? "\u2022\u2022\u2022\u2022\u2022" : formatarMoeda(values[0])) +
+            "</div>" +
+            '<div class="gu-pct">100% do total</div>' +
+            "</div>";
+        }
+        return;
       }
 
       var isDark = document.body.getAttribute("data-theme") === "dark";
