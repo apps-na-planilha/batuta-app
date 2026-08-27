@@ -7,7 +7,7 @@
 // O handler de `activate` apaga todo cache cujo nome nao seja este. Sem o
 // bump, um index.html quebrado guardado aqui sobrevive ao deploy e volta a
 // ser servido quando o aparelho estiver offline.
-const CACHE = "batuta-casca-v5";
+const CACHE = "batuta-casca-v6";
 const CASCA = [
   "./",
   "./index.html",
