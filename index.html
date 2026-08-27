@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-27T09:42:47.730Z   ·   Versão 4.2.0
+     Gerado em 2026-08-27T15:52:32.500Z   ·   Versão 4.4.0
      ============================================================ -->
 <!doctype html>
 <html>
@@ -44,6 +44,25 @@
          Era usada em .meta-bar-bg, .cat-chip e .obj-share-bar sem nunca ter
          sido definida — as três renderizavam transparentes. */
       --card-accent: #eef0f3;
+    }
+
+    /* Escolha entre "valor total" e "valor da parcela". Alvo de polegar:
+       a linha inteira é clicável, não só o círculo do radio. */
+    .opcao-modo-valor {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-main);
+      padding: 7px 0;
+      user-select: none;
+    }
+
+    .opcao-modo-valor input[type="radio"] {
+      transform: scale(1.2);
+      margin: 0;
+      flex-shrink: 0;
     }
 
     /* Dark Mode Override */
@@ -1101,16 +1120,30 @@
       font-family: inherit;
     }
 
-    .btn-repeat {
+    /* Os três botões de cada lançamento: editar, repetir, excluir.
+       O 🔄 sozinho ao lado da lixeira era lido como "atualizar" — quem
+       queria corrigir um valor clicava nele, ganhava um formulário
+       pré-preenchido e salvava um lançamento NOVO, ficando com dois na
+       planilha. O ✏️ ao lado resolve por eliminação: passa a existir um
+       botão que é o de editar, e o 🔄 deixa de ser o único candidato. */
+    .btn-repeat,
+    .btn-linha {
       background: none;
       border: none;
       cursor: pointer;
       font-size: 16px;
       opacity: 0.6;
       transition: opacity 0.2s;
+      /* 32px de alvo. O polegar erra em 16px, e errar entre "repetir" e
+         "excluir" duplica ou apaga um lançamento. */
+      min-width: 32px;
+      min-height: 32px;
+      padding: 0;
+      line-height: 1;
     }
 
-    .btn-repeat:hover {
+    .btn-repeat:hover,
+    .btn-linha:hover {
       opacity: 1;
     }
 
@@ -2160,8 +2193,9 @@
              Nasce escondido e so existe no mes corrente: projetar mes fechado
              nao e previsao. -->
         <div class="card" id="card-projecao" style="display: none">
-          <h3>NO RITMO ATUAL <span id="projecao-mes" class="saude-mes"></span></h3>
+          <h3>SAÍDAS PROJETADAS <span id="projecao-mes" class="saude-mes"></span></h3>
           <div class="val saude-val saude-money" id="val-projecao">—</div>
+          <div class="saude-nota" id="projecao-explica"></div>
           <div class="saude-leitura" id="projecao-delta"></div>
           <div class="saude-nota" id="projecao-metodo"></div>
           <div class="saude-nota" id="projecao-atipico" style="display: none"></div>
@@ -2627,6 +2661,9 @@
               <button class="btn-test-email" onclick="testarEmailIndividualUI('VIDENTE', this)">
                 🧭 Estrategista
               </button>
+              <button class="btn-test-email" onclick="testarEmailIndividualUI('BOAS_VINDAS', this)">
+                🌱 Boas-vindas
+              </button>
             </div>
             <div style="
                   margin-top: 8px;
@@ -2755,9 +2792,32 @@
               <input type="date" id="dataPrimeiraParcela" class="form-control" style="margin-top: 5px" required />
             </div>
           </div>
-          <div style="font-size: 11px; color: var(--text-sec); margin-top: 8px">
-            O valor será dividido igualitariamente a partir do mês selecionado
-            acima.
+          <div style="margin-top: 12px">
+            <label style="font-size: 13px; display: block; margin-bottom: 6px">
+              O valor que você digitou é
+            </label>
+            <label class="opcao-modo-valor">
+              <input type="radio" name="modoValor" value="total" checked
+                onchange="atualizarPreviaParcelas()" />
+              <span>o <strong>total</strong> da compra</span>
+            </label>
+            <label class="opcao-modo-valor">
+              <input type="radio" name="modoValor" value="parcela"
+                onchange="atualizarPreviaParcelas()" />
+              <span>o valor de <strong>cada parcela</strong></span>
+            </label>
+          </div>
+
+          <div id="parcela-previa" style="
+                font-size: 13px;
+                color: var(--text-main);
+                margin-top: 10px;
+                padding: 8px 10px;
+                background: var(--card-accent);
+                border-radius: 6px;
+                border: 1px solid var(--border);
+              ">
+            Preencha o valor e o número de parcelas.
           </div>
         </div>
       </div>
@@ -2853,6 +2913,7 @@
       document.getElementById("data").valueAsDate = new Date();
       document.getElementById("dataPrimeiraParcela").valueAsDate = new Date();
       document.getElementById("valor").value = "";
+      modoValorSelecionado("total", true);
 
       esconderAvisoParcela();
 
@@ -3770,13 +3831,17 @@
             '">\u2022\u2022\u2022\u2022\u2022</span>';
           htmlLista += "    </div>";
           htmlLista +=
+            '    <button class="btn-linha" onclick=\'event.stopPropagation(); prepararEdicao(' +
+            tJson +
+            ')\' title="Editar" aria-label="Editar lançamento">✏️</button>';
+          htmlLista +=
             '    <button class="btn-repeat" onclick=\'event.stopPropagation(); repetirTransacao(' +
             tJson +
-            ')\' title="Repetir">🔄</button>';
+            ')\' title="Repetir — cria um lançamento NOVO" aria-label="Repetir: cria um lançamento novo">🔄</button>';
           htmlLista +=
-            '    <button style="background:none;border:none;cursor:pointer;font-size:16px;opacity:0.7" onclick=\'event.stopPropagation(); deletarItem(' +
+            '    <button class="btn-linha" onclick=\'event.stopPropagation(); deletarItem(' +
             tJson +
-            ')\'>🗑️</button>';
+            ')\' title="Excluir" aria-label="Excluir lançamento">🗑️</button>';
           htmlLista += "  </div>";
           htmlLista += "</div>";
         });
@@ -3867,11 +3932,24 @@
         currency: "BRL",
       });
 
-      document.getElementById("descricao").value = t.desc || "";
+      // Repetir uma PARCELA não pode carregar o "(1/6)" junto: a compra nova
+      // ganharia a descrição "Notebook (1/6) (1/6)" — foi exatamente o que
+      // aconteceu no primeiro uso real, e é a assinatura do erro na planilha.
+      var descLimpa = (t.desc || "").replace(RE_PARCELA_DESC, "").trim();
+      document.getElementById("descricao").value = descLimpa;
       document.getElementById("data").valueAsDate = new Date();
       // Troca pra aba Novo
       mudarAba("view-form");
-      showToast("🔄 Transação pre-preenchida!", "info");
+
+      // O texto diz NOVO em letras próprias. Quem clicou aqui querendo
+      // corrigir um lançamento precisa perceber antes de salvar — depois já
+      // são duas linhas na planilha.
+      showToast(
+        t.parcelas > 1
+          ? "🔄 Cópia de uma parcela — isto cria um lançamento NOVO"
+          : "🔄 Cópia — isto cria um lançamento NOVO",
+        "info",
+      );
     }
 
     function prepararEdicao(t) {
@@ -3955,8 +4033,8 @@
     // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
-    var VERSAO_PWA = "4.2.0";
-    var BUILD_PWA = "2026-08-27T09:42:47.730Z";
+    var VERSAO_PWA = "4.4.0";
+    var BUILD_PWA = "2026-08-27T15:52:32.500Z";
 
     /**
      * Desliga este aparelho da planilha e volta para a tela de conexão.
@@ -5962,20 +6040,44 @@
       if (privacyMode) elVal.classList.add("privacy-mask");
       else elVal.classList.remove("privacy-mask");
 
+      // O QUE é este número, e de onde saiu.
+      //
+      // O card dizia só "NO RITMO ATUAL" sobre um valor — e a primeira
+      // pergunta de quem o viu foi, literalmente, "no ritmo atual R$
+      // 2.304,33 o quê?". Um número de previsão sem unidade e sem base não
+      // é informação, é ruído com aparência de precisão.
+      var elExplica = document.getElementById("projecao-explica");
+      elExplica.innerText =
+        "é quanto o mês deve fechar em saídas — " +
+        formatarMoeda(p.gastoAteHoje) +
+        " saíram em " +
+        p.dia +
+        " de " +
+        p.diasDoMes +
+        " dias";
+      if (privacyMode) elExplica.classList.add("privacy-mask");
+      else elExplica.classList.remove("privacy-mask");
+
       // A comparação com a média é o que dá sentido ao número. Sozinho,
       // "R$ 14.200" não diz se é muito ou pouco.
       var elDelta = document.getElementById("projecao-delta");
       if (p.delta === null || p.mediaHistorica === null) {
-        elDelta.className = "saude-leitura vazio";
-        elDelta.innerText = "ainda sem meses anteriores para comparar";
+        // Sem histórico, esta linha e o rodapé diziam a mesma coisa com
+        // palavras diferentes ("sem meses anteriores" / "sem histórico
+        // suficiente"). Duas frases para uma informação fazem o card
+        // parecer mais cheio e menos claro.
+        elDelta.style.display = "none";
       } else if (Math.abs(p.delta) < 1) {
+        elDelta.style.display = "block";
         elDelta.className = "saude-leitura vazio";
         elDelta.innerText = "em linha com a sua média de 3 meses";
       } else if (p.delta > 0) {
+        elDelta.style.display = "block";
         elDelta.className = "saude-leitura saude-money atencao";
         elDelta.innerText =
           "▲ " + formatarMoeda(p.delta) + " acima da sua média de 3 meses";
       } else {
+        elDelta.style.display = "block";
         elDelta.className = "saude-leitura saude-money saudavel";
         elDelta.innerText =
           "▼ " + formatarMoeda(Math.abs(p.delta)) + " abaixo da sua média de 3 meses";
@@ -6218,15 +6320,9 @@
 
     function enviarForm() {
       var tipo = document.getElementById("tipo").value;
-      // Formata os dados
-      var valStr = document.getElementById("valor").value; // "R$ 1.200,50"
-      // Remove R$, pontos e substitui virgula por ponto
-      var valLimpo = valStr
-        .replace("R$", "")
-        .replace(/\./g, "")
-        .replace(",", ".")
-        .trim();
-      var valor = parseFloat(valLimpo);
+      // Mesmo parser da prévia: duas leituras diferentes da máscara é como
+      // a tela e o que se salva passam a discordar.
+      var valor = valorDigitado();
 
       if (isNaN(valor) || valor === 0) {
         showToast("⚠️ Digite um valor válido!", "error");
@@ -6269,6 +6365,8 @@
         isParcelado: isParcelado,
         parcelas: isParcelado ? numParcelas : 1,
         dataPrimeiraParcela: isParcelado ? dataPrimeiraParcela : null,
+        // "total" (padrão) ou "parcela" — ver core/parcelas.gs.
+        modoValor: isParcelado ? modoValorSelecionado() : "total",
         // Só tem efeito em edição de linha que pertence a um parcelamento.
         escopoEdicao: (document.getElementById("edit-parcela-todas") || {})
           .checked
@@ -6455,7 +6553,14 @@
         style: "currency",
         currency: "BRL",
       }).format(numberValue);
+
+      atualizarPreviaParcelas();
     });
+
+    // O número de parcelas move os dois lados da conta.
+    document
+      .getElementById("numParcelas")
+      .addEventListener("input", atualizarPreviaParcelas);
 
     // --- PARCELAS UX ---
     function toggleParcelasInput() {
@@ -6470,11 +6575,96 @@
           inData.valueAsDate = new Date();
         }
         inNum.focus();
+        atualizarPreviaParcelas();
       } else {
         divConfig.style.display = "none";
         if (inNum) inNum.value = "";
         if (inData) inData.value = "";
+        modoValorSelecionado("total", true);
       }
+    }
+
+    /** Lê (ou força) o modo escolhido: "total" ou "parcela". */
+    function modoValorSelecionado(forcar, aplicar) {
+      var radios = document.getElementsByName("modoValor");
+      for (var i = 0; i < radios.length; i++) {
+        if (aplicar) radios[i].checked = radios[i].value === forcar;
+        else if (radios[i].checked) return radios[i].value;
+      }
+      return forcar || "total";
+    }
+
+    /**
+     * A prévia do parcelamento, ao vivo.
+     *
+     * É a peça que impede o erro em vez de explicá-lo depois. Alguém digitou
+     * 334,50 querendo dizer "minha parte por mês", o app dividiu por 6 e
+     * gravou seis parcelas de 55,75 — e só deu para perceber olhando a lista
+     * de lançamentos do mês seguinte. Aqui a conta aparece antes de salvar,
+     * com o total e a parcela lado a lado.
+     */
+    function atualizarPreviaParcelas() {
+      var caixa = document.getElementById("parcela-previa");
+      if (!caixa) return;
+
+      var check = document.getElementById("isParcelado");
+      if (!check || !check.checked) return;
+
+      var valor = valorDigitado();
+      var n = parseInt((document.getElementById("numParcelas") || {}).value);
+      var modo = modoValorSelecionado();
+
+      if (!valor || isNaN(n) || n < 2) {
+        caixa.innerHTML = "Preencha o valor e o número de parcelas.";
+        return;
+      }
+      if (n > 72) {
+        caixa.innerHTML = "⚠️ O máximo é 72 parcelas.";
+        return;
+      }
+
+      // Mesma conta do backend, incluindo o centavo residual na última —
+      // ver valoresDasParcelas() em core/parcelas.gs. Se as duas divergirem,
+      // a prévia mente, que é pior do que não existir.
+      var parcela, total, residuo;
+      if (modo === "parcela") {
+        parcela = Math.round(valor * 100) / 100;
+        total = Number((parcela * n).toFixed(2));
+        residuo = parcela;
+      } else {
+        parcela = Math.floor((valor / n) * 100) / 100;
+        total = valor;
+        residuo = Number((parcela + (valor - parcela * n)).toFixed(2));
+      }
+
+      var texto =
+        "<strong>" +
+        n +
+        "× de " +
+        formatarMoeda(parcela) +
+        "</strong> = " +
+        formatarMoeda(total) +
+        " no total";
+      if (residuo !== parcela) {
+        texto +=
+          '<br><span style="color:var(--text-sec);font-size:11px">' +
+          "a última fica em " +
+          formatarMoeda(residuo) +
+          " para fechar a conta em centavos</span>";
+      }
+      caixa.innerHTML = texto;
+    }
+
+    /** O valor do formulário como número, sem a máscara de moeda. */
+    function valorDigitado() {
+      var bruto = (document.getElementById("valor") || {}).value || "";
+      var limpo = bruto
+        .replace("R$", "")
+        .replace(/\./g, "")
+        .replace(",", ".")
+        .trim();
+      var n = parseFloat(limpo);
+      return isNaN(n) ? 0 : n;
     }
 
     // ╔══════════════════════════════════════════════════════════════╗
