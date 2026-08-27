@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-27T16:00:10.065Z   ·   Versão 4.4.0
+     Gerado em 2026-08-27T17:27:23.669Z   ·   Versão 4.4.1
      ============================================================ -->
 <!doctype html>
 <html>
@@ -44,6 +44,26 @@
          Era usada em .meta-bar-bg, .cat-chip e .obj-share-bar sem nunca ter
          sido definida — as três renderizavam transparentes. */
       --card-accent: #eef0f3;
+    }
+
+    /* O resultado da divisão. Barra à esquerda em vez de caixa fechada:
+       input nenhum tem borda de um lado só, então não há como confundir. */
+    .parcela-previa {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-main);
+      margin-top: 12px;
+      padding-left: 10px;
+      border-left: 3px solid var(--primary);
+    }
+
+    /* Onde digitar, quando ainda não há o que calcular. Texto solto, sem
+       nada em volta que sugira um campo. */
+    .parcela-dica {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-sec);
+      margin-top: 12px;
     }
 
     /* Escolha entre "valor total" e "valor da parcela". Alvo de polegar:
@@ -2808,16 +2828,16 @@
             </label>
           </div>
 
-          <div id="parcela-previa" style="
-                font-size: 13px;
-                color: var(--text-main);
-                margin-top: 10px;
-                padding: 8px 10px;
-                background: var(--card-accent);
-                border-radius: 6px;
-                border: 1px solid var(--border);
-              ">
-            Preencha o valor e o número de parcelas.
+          <!-- A prévia é um RESULTADO, não um campo.
+               Nasceu com borda, fundo e texto cinza — a mesma linguagem
+               visual dos inputs logo acima — dizendo "Preencha o valor e o
+               número de parcelas". Foi lida como um campo a preencher: a
+               pessoa tocou nela esperando o teclado abrir, e o campo de
+               valor de verdade está bem mais acima, antes do "Compra
+               Parcelada?". Sem caixa, sem borda, sem fundo. -->
+          <div id="parcela-previa" class="parcela-previa" style="display: none"></div>
+          <div id="parcela-dica" class="parcela-dica">
+            ↑ Digite o valor no campo <strong>Valor</strong>, acima.
           </div>
         </div>
       </div>
@@ -2914,6 +2934,7 @@
       document.getElementById("dataPrimeiraParcela").valueAsDate = new Date();
       document.getElementById("valor").value = "";
       modoValorSelecionado("total", true);
+      limparPreviaParcelas();
 
       esconderAvisoParcela();
 
@@ -4033,8 +4054,8 @@
     // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
-    var VERSAO_PWA = "4.4.0";
-    var BUILD_PWA = "2026-08-27T16:00:10.065Z";
+    var VERSAO_PWA = "4.4.1";
+    var BUILD_PWA = "2026-08-27T17:27:23.669Z";
 
     /**
      * Desliga este aparelho da planilha e volta para a tela de conexão.
@@ -6581,6 +6602,22 @@
         if (inNum) inNum.value = "";
         if (inData) inData.value = "";
         modoValorSelecionado("total", true);
+        limparPreviaParcelas();
+      }
+    }
+
+    /** Volta a prévia ao estado inicial: sem conta, só a dica de onde digitar. */
+    function limparPreviaParcelas() {
+      var caixa = document.getElementById("parcela-previa");
+      var dica = document.getElementById("parcela-dica");
+      if (caixa) {
+        caixa.style.display = "none";
+        caixa.innerHTML = "";
+      }
+      if (dica) {
+        dica.style.display = "block";
+        dica.innerHTML =
+          "↑ Digite o valor no campo <strong>Valor</strong>, acima.";
       }
     }
 
@@ -6605,27 +6642,44 @@
      */
     function atualizarPreviaParcelas() {
       var caixa = document.getElementById("parcela-previa");
-      if (!caixa) return;
+      var dica = document.getElementById("parcela-dica");
+      if (!caixa || !dica) return;
 
       var check = document.getElementById("isParcelado");
       if (!check || !check.checked) return;
 
       var valor = valorDigitado();
       var n = parseInt((document.getElementById("numParcelas") || {}).value);
-      var modo = modoValorSelecionado();
 
-      if (!valor || isNaN(n) || n < 2) {
-        caixa.innerHTML = "Preencha o valor e o número de parcelas.";
-        return;
+      /** Sem conta a mostrar, a prévia SOME e sobra só onde digitar. */
+      function soADica(texto) {
+        caixa.style.display = "none";
+        caixa.innerHTML = "";
+        dica.style.display = "block";
+        dica.innerHTML = texto;
+      }
+
+      if (!valor && (isNaN(n) || n < 2)) {
+        return soADica(
+          "↑ Digite o valor no campo <strong>Valor</strong>, acima.",
+        );
+      }
+      if (!valor) {
+        return soADica(
+          "↑ Falta o valor — ele vai no campo <strong>Valor</strong>, acima.",
+        );
+      }
+      if (isNaN(n) || n < 2) {
+        return soADica("Informe o número de parcelas (de 2 a 72).");
       }
       if (n > 72) {
-        caixa.innerHTML = "⚠️ O máximo é 72 parcelas.";
-        return;
+        return soADica("⚠️ O máximo é 72 parcelas.");
       }
 
       // Mesma conta do backend, incluindo o centavo residual na última —
       // ver valoresDasParcelas() em core/parcelas.gs. Se as duas divergirem,
       // a prévia mente, que é pior do que não existir.
+      var modo = modoValorSelecionado();
       var parcela, total, residuo;
       if (modo === "parcela") {
         parcela = Math.round(valor * 100) / 100;
@@ -6642,7 +6696,7 @@
         n +
         "× de " +
         formatarMoeda(parcela) +
-        "</strong> = " +
+        "</strong><br>" +
         formatarMoeda(total) +
         " no total";
       if (residuo !== parcela) {
@@ -6653,6 +6707,8 @@
           " para fechar a conta em centavos</span>";
       }
       caixa.innerHTML = texto;
+      caixa.style.display = "block";
+      dica.style.display = "none";
     }
 
     /** O valor do formulário como número, sem a máscara de moeda. */
