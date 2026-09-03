@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-08-27T19:37:17.636Z   ·   Versão 4.4.2
+     Gerado em 2026-09-03T22:09:18.502Z   ·   Versão 4.5.0
      ============================================================ -->
 <!doctype html>
 <html>
@@ -367,6 +367,23 @@
     }
 
     /* Estado vazio: informação, não alarme. Não pode parecer erro. */
+    /* "R$ 350,00 já saíram · R$ 2.960,90 a vencer".
+       Vai DENTRO do card do KPI, abaixo do número, porque é o mesmo número
+       repartido — não é outro dado. */
+    .vencimento {
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-sec);
+      margin-top: 4px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .vencimento strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
     .saude-leitura.vazio {
       color: var(--text-sec);
       font-weight: 500;
@@ -2142,6 +2159,9 @@
             ----
           </div>
           <span id="delta-entradas" class="delta-badge" style="display: none"></span>
+          <!-- Quanto do mês já caiu e quanto ainda vai cair. Some quando as
+               duas metades não existem — mês fechado não tem "a receber". -->
+          <div class="vencimento" id="venc-entradas" style="display: none"></div>
           <div class="sparkline-wrap" id="spark-entradas"></div>
         </div>
         <div class="card" style="position: relative; overflow: hidden">
@@ -2150,6 +2170,7 @@
             ----
           </div>
           <span id="delta-saidas" class="delta-badge" style="display: none"></span>
+          <div class="vencimento" id="venc-saidas" style="display: none"></div>
           <div class="sparkline-wrap" id="spark-saidas"></div>
         </div>
         <div class="card wide" style="position: relative; overflow: hidden">
@@ -2586,6 +2607,10 @@
             <span>📅 Resumo Mensal (dia 1)</span>
           </label>
           <label class="maestro-toggle">
+            <input type="checkbox" id="maestro-porteiro" />
+            <span>📬 O Porteiro (contas a vencer)</span>
+          </label>
+          <label class="maestro-toggle">
             <input type="checkbox" id="maestro-vidente" />
             <span>🧭 O Estrategista (Planejamento Mensal)</span>
           </label>
@@ -2680,6 +2705,9 @@
               </button>
               <button class="btn-test-email" onclick="testarEmailIndividualUI('VIDENTE', this)">
                 🧭 Estrategista
+              </button>
+              <button class="btn-test-email" onclick="testarEmailIndividualUI('PORTEIRO', this)">
+                📬 Porteiro
               </button>
               <button class="btn-test-email" onclick="testarEmailIndividualUI('BOAS_VINDAS', this)">
                 🌱 Boas-vindas
@@ -3481,6 +3509,10 @@
       atualizarValorNaTela("val-saidas");
       atualizarValorNaTela("val-invest");
 
+      // 2a-bis. O mês repartido entre o que já aconteceu e o que vai vencer.
+      renderizarVencimento("venc-entradas", dados.vencimento && dados.vencimento.entradas, "entrar");
+      renderizarVencimento("venc-saidas", dados.vencimento && dados.vencimento.saidas, "sair");
+
       // 2b. Saúde financeira: taxa de poupança e runway (SPEC-001)
       renderizarTaxaPoupanca(dados.taxaPoupanca, dados.mesReferencia);
       renderizarRunway(dados.runway, dados.mesReferencia);
@@ -4098,8 +4130,8 @@
     // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
-    var VERSAO_PWA = "4.4.2";
-    var BUILD_PWA = "2026-08-27T19:37:17.636Z";
+    var VERSAO_PWA = "4.5.0";
+    var BUILD_PWA = "2026-09-03T22:09:18.502Z";
 
     /**
      * Desliga este aparelho da planilha e volta para a tela de conexão.
@@ -4394,6 +4426,8 @@
         prefs.resumo !== false;
       document.getElementById("maestro-resumo-mensal").checked =
         prefs.resumoMensal !== false;
+      document.getElementById("maestro-porteiro").checked =
+        prefs.porteiro !== false;
       document.getElementById("maestro-vidente").checked =
         prefs.vidente !== false;
       document.getElementById("maestro-snooze-until").value = _isoToDtLocal(
@@ -4491,6 +4525,7 @@
           festa: getChk("maestro-festa"),
           resumo: getChk("maestro-resumo"),
           resumoMensal: getChk("maestro-resumo-mensal"),
+          porteiro: getChk("maestro-porteiro"),
           vidente: getChk("maestro-vidente"),
           snoozeUntil: _dtLocalToIso(getVal("maestro-snooze-until")),
         };
@@ -5874,6 +5909,45 @@
       saudavel: "mais de 6 meses de reserva — folga confortável",
     };
 
+    /**
+     * A linha "já saiu · a vencer" sob o número do KPI.
+     *
+     * O card mostra o mês INTEIRO — inclusive o que ainda não aconteceu.
+     * Enquanto ninguém lançava conta futura isso não aparecia; hoje o
+     * parcelamento cria linhas futuras por definição, e quem lança as contas
+     * antes de pagá-las lê um número que mistura as duas coisas.
+     *
+     * Some quando não há as duas metades: num mês fechado, "a vencer" é
+     * sempre zero, e a linha viraria ruído em todo mês do passado.
+     *
+     * @param {string} id
+     * @param {Object} v - {realizado, aVencer, total}
+     * @param {string} verbo - "entrar" ou "sair"
+     */
+    function renderizarVencimento(id, v, verbo) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (!v || v.total <= 0 || v.aVencer <= 0) {
+        el.style.display = "none";
+        return;
+      }
+      var jaFoi = verbo === "sair" ? "já saíram" : "já entraram";
+      var falta = verbo === "sair" ? "a vencer" : "a receber";
+      el.style.display = "block";
+      el.innerHTML =
+        "<strong>" +
+        formatarMoeda(v.realizado) +
+        "</strong> " +
+        jaFoi +
+        " · <strong>" +
+        formatarMoeda(v.aVencer) +
+        "</strong> " +
+        falta;
+      // Carrega dinheiro: obedece o olho como todo o resto.
+      if (privacyMode) el.classList.add("privacy-mask");
+      else el.classList.remove("privacy-mask");
+    }
+
     function renderizarRunway(rw, mesReferencia) {
       var card = document.getElementById("card-runway");
 
@@ -5889,11 +5963,18 @@
       var elLeitura = document.getElementById("runway-leitura");
 
       var semReserva = rw.posicao <= 0;
+      // `sem_base` é o caso em que o gasto médio veio de menos de dois meses
+      // fechados. O número continua; o VEREDITO é que não tem base. Ver
+      // MESES_MINIMOS_RUNWAY em core/calculos.gs.
+      var semBase = rw.nivel === "sem_base";
       var rotulo = num1(rw.meses);
       elVal.innerText = semReserva
         ? "0 meses"
         : rotulo + (rotulo === "1,0" ? " mês" : " meses");
-      elVal.style.color = CORES_SAUDE[rw.nivel] || "var(--text-main)";
+      // Sem base, sem cor de alarme: vermelho é uma afirmação.
+      elVal.style.color = semBase
+        ? "var(--text-main)"
+        : CORES_SAUDE[rw.nivel] || "var(--text-main)";
 
       // Borra em vez de trocar por pontos: é o mesmo tratamento de
       // .meta-val e .ival, e é o que faz o botão do olho funcionar sem
@@ -5903,12 +5984,25 @@
       if (privacyMode) money.classList.add("privacy-mask");
       else money.classList.remove("privacy-mask");
 
-      elLeitura.className = "saude-leitura " + rw.nivel;
-      elLeitura.innerText =
-        (rw.nivel === "saudavel" ? "✓ " : "⚠ ") +
-        (semReserva
-          ? "sem reserva investida para sustentar seus gastos"
-          : LEITURA_RUNWAY[rw.nivel] || "");
+      if (semBase) {
+        // A voz do produto é a do e-mail de boas-vindas: o app avisa quando
+        // ele mesmo ainda não sabe. Com um mês fechado de R$ 19,48, dizer
+        // "um imprevisto vira dívida" é o app afirmando o que não mediu.
+        elLeitura.className = "saude-leitura vazio";
+        elLeitura.innerText =
+          "○ base de " +
+          (rw.mesesDaMedia === 1
+            ? "1 mês fechado"
+            : rw.mesesDaMedia + " meses fechados") +
+          " — ainda é cedo para ler isto como reserva";
+      } else {
+        elLeitura.className = "saude-leitura " + rw.nivel;
+        elLeitura.innerText =
+          (rw.nivel === "saudavel" ? "✓ " : "⚠ ") +
+          (semReserva
+            ? "sem reserva investida para sustentar seus gastos"
+            : LEITURA_RUNWAY[rw.nivel] || "");
+      }
 
       // Nota de liquidez (SPEC-005): só faz sentido quando parte da posição
       // ficou de fora. Se tudo conta, explicar a diferença seria ruído.
@@ -6050,9 +6144,17 @@
         html += '<div class="anomalia-item"><div style="min-width:0">';
         html += '  <div class="anomalia-nome">' + a.categoria + "</div>";
         html += '  <div class="anomalia-detalhe">';
+        // "do mês" era ambíguo e, num mês com conta futura lançada,
+        // simplesmente errado: anomaliasPorCategoria mede sobre o que JÁ
+        // SAIU (_gastoDoMesAteHoje), não sobre o mês inteiro. Numa tela
+        // real, "PC/Setup já é 42,9% do mês" eram R$ 150 de R$ 350 já
+        // gastos — e não de R$ 3.310,90, que era o total do card ao lado.
         html += a.nova
-          ? "categoria nova — já é " + a.share + "% do mês"
-          : a.share + "% do mês, contra " + a.shareTipico + "% de costume";
+          ? "categoria nova — já é " + a.share + "% do que saiu até hoje"
+          : a.share +
+            "% do que saiu até hoje, contra " +
+            a.shareTipico +
+            "% de costume";
         html += "</div></div>";
         html +=
           '  <div class="anomalia-razao ' + a.nivel + '">' +
