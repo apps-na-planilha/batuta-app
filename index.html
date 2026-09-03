@@ -1,7 +1,7 @@
 <!-- ============================================================
      ARQUIVO GERADO — não edite à mão.
      Fonte: Index.html   ·   Build: npm run build
-     Gerado em 2026-09-03T22:11:01.574Z   ·   Versão 4.5.0
+     Gerado em 2026-09-03T22:35:00.193Z   ·   Versão 4.5.1
      ============================================================ -->
 <!doctype html>
 <html>
@@ -367,7 +367,7 @@
     }
 
     /* Estado vazio: informação, não alarme. Não pode parecer erro. */
-    /* "R$ 350,00 já saíram · R$ 2.960,90 a vencer".
+    /* "R$ 350,00 até hoje · R$ 2.960,90 a vencer".
        Vai DENTRO do card do KPI, abaixo do número, porque é o mesmo número
        repartido — não é outro dado. */
     .vencimento {
@@ -4130,8 +4130,8 @@
     // Carimbadas por build-pwa.mjs no arquivo GERADO. Na fonte ficam assim de
     // propósito: "dev" na tela é a informação certa quando alguém está olhando
     // o Index.html servido direto, sem passar pelo build. Ver 14.4.
-    var VERSAO_PWA = "4.5.0";
-    var BUILD_PWA = "2026-09-03T22:11:01.574Z";
+    var VERSAO_PWA = "4.5.1";
+    var BUILD_PWA = "2026-09-03T22:35:00.193Z";
 
     /**
      * Desliga este aparelho da planilha e volta para a tela de conexão.
@@ -5931,15 +5931,22 @@
         el.style.display = "none";
         return;
       }
-      var jaFoi = verbo === "sair" ? "já saíram" : "já entraram";
+      // "até hoje", e não "já saíram".
+      //
+      // O app sabe que a DATA chegou. Quem afirmaria que o dinheiro saiu
+      // seria ele, por inferência — e ele não fala com o banco. Uma conta
+      // lançada para o dia 4 e não paga apareceria como "já saiu" do mesmo
+      // jeito. É o mesmo defeito do runway que a 4.5.0 consertou: afirmar
+      // além do que se mediu, só que menor.
+      //
+      // Casa com o card 🔎, que diz "do que saiu até hoje" — os dois medem
+      // a mesma janela e agora usam as mesmas palavras.
       var falta = verbo === "sair" ? "a vencer" : "a receber";
       el.style.display = "block";
       el.innerHTML =
         "<strong>" +
         formatarMoeda(v.realizado) +
-        "</strong> " +
-        jaFoi +
-        " · <strong>" +
+        "</strong> até hoje · <strong>" +
         formatarMoeda(v.aVencer) +
         "</strong> " +
         falta;
